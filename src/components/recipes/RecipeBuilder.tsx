@@ -8,7 +8,12 @@ import NutritionCard from '@/components/ingredients/NutritionCard'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserCosts } from '@/hooks/useCosts'
 import { useAddRecipeIngredient, useRecipe, useRemoveRecipeIngredient } from '@/hooks/useRecipes'
-import { calcRecipeCost, calcRecipeNutrition } from '@/lib/nutrition'
+import {
+  calcRecipeCost,
+  calcRecipeNutrition,
+  NUTRITION_KEYS,
+  type NutritionKey,
+} from '@/lib/nutrition'
 import type { Ingredient, RecipeIngredient } from '@/types/domain'
 
 export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
@@ -33,6 +38,10 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
   )
 
   const nutrition = useMemo(() => calcRecipeNutrition(items), [items])
+  const servings = data?.recipe?.servings ?? 1
+  const perServing = Object.fromEntries(
+    NUTRITION_KEYS.map((key) => [key, nutrition[key] / servings])
+  ) as Record<NutritionKey, number>
   const estimatedCost = useMemo(() => calcRecipeCost(items, costMap), [items, costMap])
   const currency = costs?.[0]?.currency ?? 'USD'
 
@@ -44,6 +53,16 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
     fdc_id: null,
     created_at: '',
     ...nutrition,
+  } as Ingredient
+
+  const perServingAsIngredient = {
+    id: 'per-serving',
+    name: t('perServingNutrition'),
+    name_en: 'Per serving',
+    category: '',
+    fdc_id: null,
+    created_at: '',
+    ...perServing,
   } as Ingredient
 
   function handleAdd() {
@@ -80,7 +99,12 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
   return (
     <div className="space-y-6">
       {data?.recipe && (
-        <h2 className="text-xl font-semibold text-gray-900">{data.recipe.name}</h2>
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">{data.recipe.name}</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            {servings} {t('servings')}
+          </p>
+        </div>
       )}
 
       {/* Section A — Add ingredient */}
@@ -179,7 +203,16 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
       {/* Section C — Totals */}
       {items.length > 0 && (
         <section>
-          <NutritionCard ingredient={totalsAsIngredient} label={t('totalNutrition')} />
+          <h3 className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-500">
+            {t('totalNutrition')}
+          </h3>
+          <p className="mb-3 text-xs text-gray-500">
+            {servings} {t('servings')}
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <NutritionCard ingredient={totalsAsIngredient} label={t('totalNutrition')} />
+            <NutritionCard ingredient={perServingAsIngredient} label={t('perServingNutrition')} />
+          </div>
           <p className="mt-3 text-sm text-gray-700">
             {t('estimatedCost')}: ≈ {estimatedCost.toFixed(2)} {currency}
           </p>
