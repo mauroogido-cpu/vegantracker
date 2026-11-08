@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type MouseEvent } from 'react'
 import {
   ResponsiveContainer,
   Scatter,
@@ -149,6 +149,12 @@ export default function NutrientExplorerView({ ingredients }: { ingredients: Ing
   function hideFromTooltip() {
     if (!activeTooltip) return
     setExcluded((prev) => new Set([...prev, activeTooltip.ingredientId]))
+    setActiveTooltip(null)
+  }
+
+  function handleChartClick(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target as Element
+    if (target.closest('.recharts-scatter-symbol, .recharts-symbols')) return
     setActiveTooltip(null)
   }
 
@@ -317,7 +323,10 @@ export default function NutrientExplorerView({ ingredients }: { ingredients: Ing
       )}
 
       {/* Gráfico */}
-      <div className="w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div
+        className="w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+        onClick={handleChartClick}
+      >
         <ResponsiveContainer width="100%" height={420}>
           <ScatterChart margin={{ top: 12, right: 24, bottom: 24, left: 8 }}>
             <XAxis
