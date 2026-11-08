@@ -151,14 +151,20 @@ export default function DashboardPage() {
     [userRecipes]
   )
 
+  const recipeServingsMap = useMemo(
+    () => new Map((userRecipes ?? []).map((recipe) => [recipe.id, recipe.servings] as const)),
+    [userRecipes]
+  )
+
   const dayNutrition = useMemo(
     () =>
       calcDayNutrition(
         dayLogs ?? [],
         recipeDetails ?? new Map<string, Record<NutritionKey, number>>(),
+        recipeServingsMap,
         ingredientMap
       ),
-    [dayLogs, recipeDetails, ingredientMap]
+    [dayLogs, recipeDetails, recipeServingsMap, ingredientMap]
   )
 
   const rdaPercent = useMemo(() => calcRdaPercent(dayNutrition), [dayNutrition])

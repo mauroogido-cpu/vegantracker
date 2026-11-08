@@ -51,6 +51,7 @@ export function calcRecipeCost(
 export function calcDayNutrition(
   logs: MealLog[],
   recipeNutritionMap: Map<string, Record<NutritionKey, number>>,
+  recipeServingsMap: Map<string, number>,
   ingredientMap: Map<string, Ingredient>
 ): Record<NutritionKey, number> {
   const totals = Object.fromEntries(
@@ -61,8 +62,9 @@ export function calcDayNutrition(
     if (log.recipe_id && log.servings) {
       const nutrition = recipeNutritionMap.get(log.recipe_id)
       if (nutrition) {
+        const totalServings = recipeServingsMap.get(log.recipe_id) ?? 1
         for (const key of NUTRITION_KEYS) {
-          totals[key] += nutrition[key] * log.servings
+          totals[key] += (nutrition[key] / totalServings) * log.servings
         }
       }
     }
