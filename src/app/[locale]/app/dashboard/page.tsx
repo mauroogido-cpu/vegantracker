@@ -99,6 +99,67 @@ function NutrientStat({
   )
 }
 
+/** Small pill showing one nutrient value */
+function NutrientPill({ label, value, unit }: { label: string; value: number; unit: string }) {
+  return (
+    <span className="inline-flex items-baseline gap-0.5 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+      <span className="font-medium text-gray-800">{value.toFixed(0)}</span>
+      <span>{unit}</span>
+      <span className="text-gray-400">{label}</span>
+    </span>
+  )
+}
+
+const ENTRY_MACROS: NutritionKey[] = ['cal', 'protein_g', 'carbs_g', 'fat_g']
+
+function EntryNutritionRow({
+  perServing,
+  total,
+  servings,
+  tNut,
+}: {
+  perServing: Record<NutritionKey, number>
+  total: Record<NutritionKey, number>
+  servings: number
+  tNut: (key: string) => string
+}) {
+  const multiServing = servings > 1
+  return (
+    <div className="mt-1.5 space-y-1">
+      {multiServing && (
+        <div className="flex flex-wrap items-center gap-1">
+          <span className="text-xs text-gray-400 w-20 shrink-0">Por porción:</span>
+          <div className="flex flex-wrap gap-1">
+            {ENTRY_MACROS.map((key) => (
+              <NutrientPill
+                key={key}
+                label={tNut(T_KEY[key])}
+                value={perServing[key]}
+                unit={UNITS[key]}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-1">
+        <span className="text-xs text-gray-400 w-20 shrink-0">
+          {multiServing ? `Total (×${servings}):` : 'Total:'}
+        </span>
+        <div className="flex flex-wrap gap-1">
+          {ENTRY_MACROS.map((key) => (
+            <NutrientPill
+              key={key}
+              label={tNut(T_KEY[key])}
+              value={total[key]}
+              unit={UNITS[key]}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const tNav = useTranslations('nav')
   const tDash = useTranslations('dashboard')
@@ -170,6 +231,51 @@ export default function DashboardPage() {
   const rdaPercent = useMemo(() => calcRdaPercent(dayNutrition), [dayNutrition])
 
   const logs = dayLogs ?? []
+
+  function calcEntryNutrition(entry: (typeof logs)[0]) {
+    if (entry.recipe_id) {
+      const recipeNutrition = recipeDetails?.get(entry.recipe_id)
+      const totalServings = recipeServingsMap.get(entry.recipe_id) ?? 1
+      if (!recipeNutrition) return null
+      const loggedServings = entry.servings ?? 1
+      const perServing = Object.fromEntries(
+        (Object.keys(recipeNutrition) as NutritionKey[]).map((k) => [
+          k,
+          recipeNutrition[k] / totalServings,
+        ])
+      ) as Record<NutritionKey, number>
+      const total = Object.fromEntries(
+        (Object.keys(perServing) as NutritionKey[]).map((k) => [k, perServing[k] * loggedServings])
+      ) as Record<NutritionKey, number>
+      return { perServing, total, servings: loggedServings }
+    }
+
+    if (entry.ingredient_id) {
+      const ingredient = ingredientMap.get(entry.ingredient_id)
+      if (!ingredient) return null
+      const f = (entry.quantity_g ?? 0) / 100
+      const total = {
+        cal: (ingredient.cal ?? 0) * f,
+        protein_g: (ingredient.protein_g ?? 0) * f,
+        carbs_g: (ingredient.carbs_g ?? 0) * f,
+        fat_g: (ingredient.fat_g ?? 0) * f,
+        fiber_g: (ingredient.fiber_g ?? 0) * f,
+        iron_mg: (ingredient.iron_mg ?? 0) * f,
+        calcium_mg: (ingredient.calcium_mg ?? 0) * f,
+        zinc_mg: (ingredient.zinc_mg ?? 0) * f,
+        vit_b12_mcg: (ingredient.vit_b12_mcg ?? 0) * f,
+        vit_d_mcg: (ingredient.vit_d_mcg ?? 0) * f,
+        vit_c_mg: (ingredient.vit_c_mg ?? 0) * f,
+        omega3_g: (ingredient.omega3_g ?? 0) * f,
+      } as Record<NutritionKey, number>
+      const zero = Object.fromEntries(
+        Object.keys(total).map((k) => [k, 0])
+      ) as Record<NutritionKey, number>
+      return { perServing: zero, total, servings: 1 }
+    }
+
+    return null
+  }
 
   return (
     <div className="space-y-8">
@@ -243,18 +349,38 @@ export default function DashboardPage() {
                   {tMeal(meal.value)}
                 </h3>
                 <ul className="divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 bg-white">
-                  {entries.map((entry) => (
-                    <li key={entry.id} className="px-4 py-2 text-sm text-gray-900">
-                      {entry.recipe_id
-                        ? `${recipeNameMap.get(entry.recipe_id) ?? '—'} × ${entry.servings ?? ''}`
-                        : `${ingredientMap.get(entry.ingredient_id ?? '')?.name ?? '—'} ${
-                            entry.quantity_g ?? ''
-                          }g`}
-                      {entry.notes && (
-                        <span className="ml-2 text-xs text-gray-500">— {entry.notes}</span>
-                      )}
-                    </li>
-                  ))}
+                  {entries.map((entry) => {
+                    const entryNutrition = calcEntryNutrition(entry)
+                    return (
+                      <li key={entry.id} className="px-4 py-3 text-sm text-gray-900">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-medium">
+                            {entry.recipe_id
+                              ? recipeNameMap.get(entry.recipe_id) ?? '—'
+                              : ingredientMap.get(entry.ingredient_id ?? '')?.name ?? '—'}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {entry.recipe_id
+                              ? `× ${entry.servings ?? 1} ${
+                                  (entry.servings ?? 1) === 1 ? 'porción' : 'porciones'
+                                }`
+                              : `${entry.quantity_g ?? ''}g`}
+                          </span>
+                          {entry.notes && (
+                            <span className="text-xs text-gray-400">— {entry.notes}</span>
+                          )}
+                        </div>
+                        {entryNutrition && (
+                          <EntryNutritionRow
+                            perServing={entryNutrition.perServing}
+                            total={entryNutrition.total}
+                            servings={entryNutrition.servings}
+                            tNut={tNut}
+                          />
+                        )}
+                      </li>
+                    )
+                  })}
                 </ul>
               </div>
             )
