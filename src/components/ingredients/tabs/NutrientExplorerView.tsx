@@ -61,36 +61,96 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 type ScatterPoint = { x: number; y: number; name: string; category: string }
 
+function stats(values: number[]): { mean: number; std: number } {
+  if (values.length === 0) return { mean: 0, std: 0 }
+  const mean = values.reduce((a, b) => a + b, 0) / values.length
+  const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length
+  return { mean, std: Math.sqrt(variance) }
+}
+
+const OUTLIER_THRESHOLD = 2.5
+
 export default function NutrientExplorerView({ ingredients }: { ingredients: Ingredient[] }) {
   const [xKey, setXKey] = useState<NutrientKey>('protein_g')
   const [yKey, setYKey] = useState<NutrientKey>('cal')
+  const [hideOutliers, setHideOutliers] = useState(false)
+  // manually excluded via click on chart point
+  const [excluded, setExcluded] = useState<Set<string>>(new Set())
+  // outliers explicitly restored via ✕ chip
+  const [outlierExceptions, setOutlierExceptions] = useState<Set<string>>(new Set())
 
-  const xNutrient = NUTRIENTS.find((nutrient) => nutrient.key === xKey)!
-  const yNutrient = NUTRIENTS.find((nutrient) => nutrient.key === yKey)!
+  const xNutrient = NUTRIENTS.find((n) => n.key === xKey)!
+  const yNutrient = NUTRIENTS.find((n) => n.key === yKey)!
+
+  const { xStats, yStats } = useMemo(() => {
+    const xs = ingredients.map((i) => i[xKey] as number)
+    const ys = ingredients.map((i) => i[yKey] as number)
+    return { xStats: stats(xs), yStats: stats(ys) }
+  }, [ingredients, xKey, yKey])
+
+  function isOutlier(ingredient: Ingredient): boolean {
+    if (outlierExceptions.has(ingredient.id)) return false
+    const xVal = ingredient[xKey] as number
+    const yVal = ingredient[yKey] as number
+    return (
+      Math.abs(xVal - xStats.mean) > OUTLIER_THRESHOLD * xStats.std ||
+      Math.abs(yVal - yStats.mean) > OUTLIER_THRESHOLD * yStats.std
+    )
+  }
 
   const groups = useMemo(() => {
     const byCategory = new Map<string, ScatterPoint[]>()
-
     for (const ingredient of ingredients) {
+      if (excluded.has(ingredient.id)) continue
+      if (hideOutliers && isOutlier(ingredient)) continue
       const points = byCategory.get(ingredient.category) ?? []
       points.push({
-        x: ingredient[xKey],
-        y: ingredient[yKey],
+        x: ingredient[xKey] as number,
+        y: ingredient[yKey] as number,
         name: ingredient.name,
         category: ingredient.category,
       })
       byCategory.set(ingredient.category, points)
     }
-
     return [...byCategory.entries()]
-  }, [ingredients, xKey, yKey])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ingredients, xKey, yKey, hideOutliers, xStats, yStats, excluded, outlierExceptions])
+
+  const hiddenIngredients = useMemo(() => {
+    return ingredients.filter(
+      (i) => excluded.has(i.id) || (hideOutliers && isOutlier(i))
+    )
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ingredients, xKey, yKey, hideOutliers, xStats, yStats, excluded, outlierExceptions])
+
+  function handlePointClick(point: ScatterPoint) {
+    const ingredient = ingredients.find((i) => i.name === point.name)
+    if (!ingredient) return
+    setExcluded((prev) => new Set([...prev, ingredient.id]))
+  }
+
+  function restoreIngredient(id: string) {
+    // Remove from manual exclusions
+    setExcluded((prev) => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+    // If it's an outlier, add it to exceptions so the auto-filter skips it
+    setOutlierExceptions((prev) => new Set([...prev, id]))
+  }
+
+  function restoreAll() {
+    setExcluded(new Set())
+    setOutlierExceptions(new Set())
+  }
 
   const selectClass =
     'rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500'
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 text-sm text-gray-700">
           Eje X
           <select
@@ -120,7 +180,48 @@ export default function NutrientExplorerView({ ingredients }: { ingredients: Ing
             ))}
           </select>
         </label>
+
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700 select-none">
+          <input
+            type="checkbox"
+            checked={hideOutliers}
+            onChange={(e) => setHideOutliers(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+          />
+          Ocultar outliers ({OUTLIER_THRESHOLD}σ)
+        </label>
       </div>
+
+      {hiddenIngredients.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-gray-500">Ocultos:</span>
+          {hiddenIngredients.map((ingredient) => (
+            <span
+              key={ingredient.id}
+              className="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+            >
+              {ingredient.name}
+              <button
+                type="button"
+                onClick={() => restoreIngredient(ingredient.id)}
+                aria-label={`Restaurar ${ingredient.name}`}
+                className="ml-0.5 text-gray-400 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </span>
+          ))}
+          {(excluded.size > 0 || outlierExceptions.size > 0) && (
+            <button
+              type="button"
+              onClick={restoreAll}
+              className="rounded-md bg-gray-100 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-200"
+            >
+              Restaurar todos
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="w-full rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
         <ResponsiveContainer width="100%" height={420}>
@@ -155,7 +256,6 @@ export default function NutrientExplorerView({ ingredients }: { ingredients: Ing
               content={({ active, payload }) => {
                 if (!active || !payload || payload.length === 0) return null
                 const point = payload[0].payload as ScatterPoint
-
                 return (
                   <div className="rounded-md border border-gray-200 bg-white p-2 shadow">
                     <p className="text-sm font-medium text-gray-900">{point.name}</p>
@@ -165,6 +265,7 @@ export default function NutrientExplorerView({ ingredients }: { ingredients: Ing
                     <p className="text-xs text-gray-600">
                       {yNutrient.label}: {point.y.toFixed(1)} {yNutrient.unit}
                     </p>
+                    <p className="mt-1 text-xs text-gray-400">Click para ocultar</p>
                   </div>
                 )
               }}
@@ -176,6 +277,8 @@ export default function NutrientExplorerView({ ingredients }: { ingredients: Ing
                 name={CATEGORY_LABELS[category] ?? category}
                 data={points}
                 fill={CATEGORY_COLORS[category] ?? CATEGORY_COLORS.other}
+                onClick={(data) => handlePointClick(data as unknown as ScatterPoint)}
+                style={{ cursor: 'pointer' }}
               />
             ))}
           </ScatterChart>
