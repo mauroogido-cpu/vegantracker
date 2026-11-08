@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
@@ -107,7 +107,11 @@ export default function DashboardPage() {
   const { locale } = useParams<{ locale: string }>()
   const { user } = useAuth()
 
-  const [selectedDate, setSelectedDate] = useState(getLocalDateString)
+  const [selectedDate, setSelectedDate] = useState('')
+
+  useEffect(() => {
+    setSelectedDate(getLocalDateString())
+  }, [])
 
   const { data: dayLogs } = useDayLog(user?.id ?? '', selectedDate)
 

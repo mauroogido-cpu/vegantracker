@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
@@ -22,7 +22,11 @@ export default function MealLogPage() {
   const { locale } = useParams<{ locale: string }>()
   const { user } = useAuth()
 
-  const [selectedDate, setSelectedDate] = useState(getLocalDateString)
+  const [selectedDate, setSelectedDate] = useState('')
+
+  useEffect(() => {
+    setSelectedDate(getLocalDateString())
+  }, [])
   const [showForm, setShowForm] = useState(false)
 
   const { data: logs } = useDayLog(user?.id ?? '', selectedDate)
