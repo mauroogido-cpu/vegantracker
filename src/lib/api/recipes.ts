@@ -157,6 +157,27 @@ export async function addRecipeIngredient(
   return data as RecipeIngredient
 }
 
+export async function updateRecipeIngredient(
+  id: string,
+  data: { quantity_g: number; notes: string | null }
+): Promise<RecipeIngredient | null> {
+  const supabase = createClient()
+
+  const { data: updated, error } = await supabase
+    .from('recipe_ingredients')
+    .update(data)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('updateRecipeIngredient failed:', error.message)
+    return null
+  }
+
+  return updated as RecipeIngredient
+}
+
 export async function removeRecipeIngredient(id: string): Promise<boolean> {
   const supabase = createClient()
 

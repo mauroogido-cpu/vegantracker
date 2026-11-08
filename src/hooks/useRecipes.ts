@@ -9,6 +9,7 @@ import {
   getUserRecipes,
   removeRecipeIngredient,
   updateRecipe,
+  updateRecipeIngredient,
 } from '@/lib/api/recipes'
 
 export function useUserRecipes(userId: string) {
@@ -76,6 +77,26 @@ export function useAddRecipeIngredient() {
     mutationFn: addRecipeIngredient,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['recipe', variables.recipe_id] })
+    },
+  })
+}
+
+export function useUpdateRecipeIngredient() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      quantity_g,
+      notes,
+    }: {
+      id: string
+      recipeId: string
+      quantity_g: number
+      notes: string | null
+    }) => updateRecipeIngredient(id, { quantity_g, notes }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['recipe', variables.recipeId] })
     },
   })
 }

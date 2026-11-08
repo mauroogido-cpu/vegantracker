@@ -7,7 +7,12 @@ import IngredientSearch from '@/components/ingredients/IngredientSearch'
 import NutritionCard from '@/components/ingredients/NutritionCard'
 import { useAuth } from '@/hooks/useAuth'
 import { useUserCosts } from '@/hooks/useCosts'
-import { useAddRecipeIngredient, useRecipe, useRemoveRecipeIngredient } from '@/hooks/useRecipes'
+import {
+  useAddRecipeIngredient,
+  useRecipe,
+  useRemoveRecipeIngredient,
+  useUpdateRecipeIngredient,
+} from '@/hooks/useRecipes'
 import {
   calcRecipeCost,
   calcRecipeNutrition,
@@ -18,6 +23,7 @@ import type { Ingredient, RecipeIngredient } from '@/types/domain'
 
 export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
   const t = useTranslations('recipe')
+  const tc = useTranslations('common')
   const { locale } = useParams<{ locale: string }>()
   const { user } = useAuth()
 
@@ -25,10 +31,14 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
   const { data: costs } = useUserCosts(user?.id ?? '')
   const addIngredient = useAddRecipeIngredient()
   const removeIngredient = useRemoveRecipeIngredient()
+  const updateIngredient = useUpdateRecipeIngredient()
 
   const [pickedIngredient, setPickedIngredient] = useState<Ingredient | null>(null)
   const [grams, setGrams] = useState('100')
   const [notes, setNotes] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editGrams, setEditGrams] = useState('')
+  const [editNotes, setEditNotes] = useState('')
 
   const items: RecipeIngredient[] = data?.items ?? []
 
@@ -173,20 +183,88 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
           <tbody className="divide-y divide-gray-100">
             {items.map((item) => (
               <tr key={item.id}>
-                <td className="px-4 py-3 text-gray-900">
-                  {item.ingredient?.name ?? item.ingredient?.name_en ?? '—'}
-                </td>
-                <td className="px-4 py-3 text-gray-700">{item.quantity_g}</td>
-                <td className="px-4 py-3 text-gray-700">{item.notes ?? '—'}</td>
-                <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => removeIngredient.mutate({ id: item.id, recipeId })}
-                    className="rounded-md bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
-                  >
-                    {t('delete')}
-                  </button>
-                </td>
+                {item.id === editingId ? (
+                  <>
+                    <td className="px-4 py-3 text-gray-900">
+                      {item.ingredient?.name ?? item.ingredient?.name_en ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      <input
+                        type="number"
+                        value={editGrams}
+                        onChange={(event) => setEditGrams(event.target.value)}
+                        className={inputClass}
+                        style={{ width: '80px' }}
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      <input
+                        type="text"
+                        value={editNotes}
+                        onChange={(event) => setEditNotes(event.target.value)}
+                        className={inputClass}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            updateIngredient.mutate(
+                              {
+                                id: item.id,
+                                recipeId,
+                                quantity_g: Number(editGrams),
+                                notes: editNotes || null,
+                              },
+                              { onSuccess: () => setEditingId(null) }
+                            )
+                          }
+                          className="rounded-md bg-primary-600 px-3 py-1 text-xs font-medium text-white hover:bg-primary-700"
+                        >
+                          {t('save')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          className="rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-800 hover:bg-gray-200"
+                        >
+                          {tc('cancel')}
+                        </button>
+                      </div>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td className="px-4 py-3 text-gray-900">
+                      {item.ingredient?.name ?? item.ingredient?.name_en ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">{item.quantity_g}</td>
+                    <td className="px-4 py-3 text-gray-700">{item.notes ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingId(item.id)
+                            setEditGrams(String(item.quantity_g))
+                            setEditNotes(item.notes ?? '')
+                          }}
+                          className="rounded-md bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100"
+                        >
+                          {t('edit')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeIngredient.mutate({ id: item.id, recipeId })}
+                          className="rounded-md bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
+                        >
+                          {t('delete')}
+                        </button>
+                      </div>
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
             {items.length === 0 && (

@@ -7,7 +7,7 @@ import RecipeForm from '@/components/recipes/RecipeForm'
 import { useAuth } from '@/hooks/useAuth'
 import { useDeleteRecipe, useUserRecipes } from '@/hooks/useRecipes'
 
-type View = 'list' | 'create' | 'detail'
+type View = 'list' | 'create' | 'detail' | 'edit'
 
 export default function RecipesPage() {
   const t = useTranslations('recipe')
@@ -38,6 +38,32 @@ export default function RecipesPage() {
             setView('detail')
           }}
         />
+      </div>
+    )
+  }
+
+  if (view === 'edit' && selectedRecipeId) {
+    const recipeToEdit = recipes?.find((r) => r.id === selectedRecipeId)
+
+    if (!recipeToEdit) {
+      setView('list')
+      return null
+    }
+
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => {
+            setView('list')
+            setSelectedRecipeId(null)
+          }}
+          className="mb-4 rounded-md bg-gray-100 px-3 py-1 text-sm font-medium text-gray-800 hover:bg-gray-200"
+        >
+          {t('back')}
+        </button>
+        <h1 className="mb-6 text-2xl font-semibold text-gray-900">{t('editRecipe')}</h1>
+        <RecipeForm existingRecipe={recipeToEdit} onSuccess={() => setView('list')} />
       </div>
     )
   }
@@ -103,6 +129,16 @@ export default function RecipesPage() {
                       className="rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-800 hover:bg-gray-200"
                     >
                       {t('open')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRecipeId(recipe.id)
+                        setView('edit')
+                      }}
+                      className="rounded-md bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100"
+                    >
+                      {t('edit')}
                     </button>
                     <button
                       type="button"
