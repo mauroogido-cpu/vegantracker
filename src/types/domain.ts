@@ -29,6 +29,17 @@ export type Ingredient = {
   vit_d_mcg: number
   vit_c_mg: number
   omega3_g: number
+  // extended nutrients
+  potassium_mg: number
+  sodium_mg: number
+  selenium_mcg: number
+  vit_a_rae_mcg: number
+  folate_mcg: number
+  magnesium_mg: number
+  vit_k_mcg: number
+  vit_e_mg: number
+  vit_b6_mg: number
+  choline_mg: number
 }
 
 export type IngredientCost = {
@@ -96,6 +107,17 @@ export interface NutritionTotals {
   vit_d_mcg: number
   vit_c_mg: number
   omega3_g: number
+  // extended nutrients
+  potassium_mg: number
+  sodium_mg: number
+  selenium_mcg: number
+  vit_a_rae_mcg: number
+  folate_mcg: number
+  magnesium_mg: number
+  vit_k_mcg: number
+  vit_e_mg: number
+  vit_b6_mg: number
+  choline_mg: number
 }
 
 export interface DayNutrition {

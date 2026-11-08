@@ -16,6 +16,16 @@ const NUTRIENTS = [
   'vit_d_mcg',
   'vit_c_mg',
   'omega3_g',
+  'potassium_mg',
+  'magnesium_mg',
+  'folate_mcg',
+  'vit_a_rae_mcg',
+  'vit_k_mcg',
+  'vit_e_mg',
+  'vit_b6_mg',
+  'selenium_mcg',
+  'sodium_mg',
+  'choline_mg',
 ] as const
 
 type NutrientKey = (typeof NUTRIENTS)[number]
@@ -33,6 +43,16 @@ const NUTRIENT_LABELS: Record<NutrientKey, { label: string; unit: string }> = {
   vit_d_mcg: { label: 'Vitamina D', unit: 'µg' },
   vit_c_mg: { label: 'Vitamina C', unit: 'mg' },
   omega3_g: { label: 'Omega-3', unit: 'g' },
+  potassium_mg: { label: 'Potasio', unit: 'mg' },
+  magnesium_mg: { label: 'Magnesio', unit: 'mg' },
+  folate_mcg: { label: 'Ácido fólico', unit: 'µg' },
+  vit_a_rae_mcg: { label: 'Vitamina A', unit: 'µg' },
+  vit_k_mcg: { label: 'Vitamina K', unit: 'µg' },
+  vit_e_mg: { label: 'Vitamina E', unit: 'mg' },
+  vit_b6_mg: { label: 'Vitamina B6', unit: 'mg' },
+  selenium_mcg: { label: 'Selenio', unit: 'µg' },
+  sodium_mg: { label: 'Sodio', unit: 'mg' },
+  choline_mg: { label: 'Colina', unit: 'mg' },
 }
 
 const MAX_SELECTED = 3

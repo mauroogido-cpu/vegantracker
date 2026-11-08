@@ -25,6 +25,16 @@ const NUTRIENTS = [
   { key: 'vit_c_mg', label: 'Vitamina C', unit: 'mg' },
   { key: 'carbs_g', label: 'Carbohidratos', unit: 'g' },
   { key: 'fat_g', label: 'Grasas', unit: 'g' },
+  { key: 'potassium_mg', label: 'Potasio', unit: 'mg' },
+  { key: 'magnesium_mg', label: 'Magnesio', unit: 'mg' },
+  { key: 'folate_mcg', label: 'Ácido fólico', unit: 'µg' },
+  { key: 'vit_a_rae_mcg', label: 'Vitamina A', unit: 'µg' },
+  { key: 'vit_k_mcg', label: 'Vitamina K', unit: 'µg' },
+  { key: 'vit_e_mg', label: 'Vitamina E', unit: 'mg' },
+  { key: 'vit_b6_mg', label: 'Vitamina B6', unit: 'mg' },
+  { key: 'selenium_mcg', label: 'Selenio', unit: 'µg' },
+  { key: 'sodium_mg', label: 'Sodio', unit: 'mg' },
+  { key: 'choline_mg', label: 'Colina', unit: 'mg' },
 ] as const
 
 type NutrientKey = (typeof NUTRIENTS)[number]['key']

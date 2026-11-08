@@ -42,6 +42,30 @@ const VEGAN_CRITICAL = [
     unit: 'mg',
     why: 'Hierro no hemo de plantas absorbe menos que el hemo animal.',
   },
+  {
+    key: 'folate_mcg',
+    label: 'Ácido fólico',
+    unit: 'µg',
+    why: 'Esencial para síntesis de ADN; veganos con dieta variada suelen cubrirlo bien.',
+  },
+  {
+    key: 'vit_a_rae_mcg',
+    label: 'Vitamina A',
+    unit: 'µg',
+    why: 'Los veganos obtienen beta-caroteno (provitamina A); conversión a retinol es variable.',
+  },
+  {
+    key: 'magnesium_mg',
+    label: 'Magnesio',
+    unit: 'mg',
+    why: 'Abundante en plantas oscuras y legumbres; suele cubrirse bien en dietas veganas variadas.',
+  },
+  {
+    key: 'vit_k_mcg',
+    label: 'Vitamina K',
+    unit: 'µg',
+    why: 'K1 en vegetales de hoja verde; K2 casi ausente en plantas, importante para huesos.',
+  },
 ] as const
 
 type CriticalKey = (typeof VEGAN_CRITICAL)[number]['key']

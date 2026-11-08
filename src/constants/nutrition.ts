@@ -14,6 +14,17 @@ export const RDA: Record<string, number> = {
   vit_d_mcg: 15,
   vit_c_mg: 90,
   omega3_g: 1.6,
+  // extended nutrients
+  potassium_mg: 4700,
+  sodium_mg: 2300,
+  selenium_mcg: 55,
+  vit_a_rae_mcg: 900,
+  folate_mcg: 400,
+  magnesium_mg: 420,
+  vit_k_mcg: 120,
+  vit_e_mg: 15,
+  vit_b6_mg: 1.7,
+  choline_mg: 550,
 }
 
 /** Ingredient categories with their i18n label keys. */

@@ -17,6 +17,16 @@ const UNITS: Record<string, string> = {
   vit_d_mcg: 'µg',
   vit_c_mg: 'mg',
   omega3_g: 'g',
+  potassium_mg: 'mg',
+  sodium_mg: 'mg',
+  selenium_mcg: 'µg',
+  vit_a_rae_mcg: 'µg',
+  folate_mcg: 'µg',
+  magnesium_mg: 'mg',
+  vit_k_mcg: 'µg',
+  vit_e_mg: 'mg',
+  vit_b6_mg: 'mg',
+  choline_mg: 'mg',
 }
 
 const NUTRIENT_KEYS = Object.keys(UNITS)
@@ -34,6 +44,16 @@ const T_KEY: Record<string, string> = {
   vit_d_mcg: 'vit_d',
   vit_c_mg: 'vit_c',
   omega3_g: 'omega3',
+  potassium_mg: 'potassium',
+  sodium_mg: 'sodium',
+  selenium_mcg: 'selenium',
+  vit_a_rae_mcg: 'vit_a',
+  folate_mcg: 'folate',
+  magnesium_mg: 'magnesium',
+  vit_k_mcg: 'vit_k',
+  vit_e_mg: 'vit_e',
+  vit_b6_mg: 'vit_b6',
+  choline_mg: 'choline',
 }
 
 export default function NutritionCard({
