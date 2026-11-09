@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import IngredientSearch from '@/components/ingredients/IngredientSearch'
 import NutritionCard from '@/components/ingredients/NutritionCard'
 import { useAuth } from '@/hooks/useAuth'
+import { usePrefsStore, displayWeight } from '@/stores/usePrefsStore'
 import { useUserCosts } from '@/hooks/useCosts'
 import {
   useAddRecipeIngredient,
@@ -35,6 +36,17 @@ const NUTRIENT_I18N: Record<NutritionKey, string> = {
   vit_d_mcg: 'vitD',
   vit_c_mg: 'vitC',
   omega3_g: 'omega3',
+  potassium_mg: 'potassium',
+  sodium_mg: 'sodium',
+  selenium_mcg: 'selenium',
+  vit_a_rae_mcg: 'vit_a',
+  folate_mcg: 'folate',
+  magnesium_mg: 'magnesium',
+  vit_k_mcg: 'vit_k',
+  vit_e_mg: 'vit_e',
+  vit_b6_mg: 'vit_b6',
+  choline_mg: 'choline',
+  saturated_fat_g: 'saturated_fat',
 }
 
 const NUTRIENT_UNITS: Record<NutritionKey, string> = {
@@ -46,10 +58,21 @@ const NUTRIENT_UNITS: Record<NutritionKey, string> = {
   iron_mg: 'mg',
   calcium_mg: 'mg',
   zinc_mg: 'mg',
-  vit_b12_mcg: 'mcg',
-  vit_d_mcg: 'mcg',
+  vit_b12_mcg: 'µg',
+  vit_d_mcg: 'µg',
   vit_c_mg: 'mg',
   omega3_g: 'g',
+  potassium_mg: 'mg',
+  sodium_mg: 'mg',
+  selenium_mcg: 'µg',
+  vit_a_rae_mcg: 'µg',
+  folate_mcg: 'µg',
+  magnesium_mg: 'mg',
+  vit_k_mcg: 'µg',
+  vit_e_mg: 'mg',
+  vit_b6_mg: 'mg',
+  choline_mg: 'mg',
+  saturated_fat_g: 'g',
 }
 
 function nutrientValue(item: RecipeIngredient, key: NutritionKey): number {
@@ -77,6 +100,7 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
   const [editGrams, setEditGrams] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [sortKey, setSortKey] = useState<NutritionKey>('cal')
+  const units = usePrefsStore((s) => s.units)
 
   const items: RecipeIngredient[] = data?.items ?? []
 
@@ -174,7 +198,7 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label htmlFor="grams" className="mb-1 block text-sm font-medium text-gray-700">
-                  {t('grams')}
+                  {t('grams')}{units === 'oz' && Number(grams) > 0 && <span className="ml-1 font-normal text-gray-400">≈ {(Number(grams) / 28.3495).toFixed(1)} oz</span>}
                 </label>
                 <input
                   id="grams"
@@ -246,7 +270,7 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
           <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th className="px-4 py-3">{t('ingredient')}</th>
-              <th className="px-4 py-3">{t('grams')}</th>
+              <th className="px-4 py-3">{units === 'oz' ? 'oz' : t('grams')}</th>
               <th className="px-4 py-3 text-right">
                 {tn(NUTRIENT_I18N[sortKey])}
                 <span className="ml-1 text-gray-400 normal-case">({NUTRIENT_UNITS[sortKey]})</span>
@@ -317,7 +341,7 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
                     <td className="px-4 py-3 text-gray-900">
                       {item.ingredient?.name ?? item.ingredient?.name_en ?? '—'}
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{item.quantity_g}</td>
+                    <td className="px-4 py-3 text-gray-700">{displayWeight(item.quantity_g, units)}</td>
                     <td className="px-4 py-3 text-right font-medium tabular-nums text-gray-800">
                       {nutrientValue(item, sortKey).toFixed(1)}
                     </td>

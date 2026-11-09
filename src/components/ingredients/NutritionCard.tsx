@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { RDA } from '@/constants/nutrition'
 import type { Ingredient } from '@/types/domain'
+import { usePrefsStore, displayWeight } from '@/stores/usePrefsStore'
 
 const UNITS: Record<string, string> = {
   cal: 'kcal',
@@ -14,7 +15,6 @@ const UNITS: Record<string, string> = {
   calcium_mg: 'mg',
   zinc_mg: 'mg',
   vit_b12_mcg: 'µg',
-  vit_d_mcg: 'µg',
   vit_c_mg: 'mg',
   omega3_g: 'g',
   potassium_mg: 'mg',
@@ -27,6 +27,7 @@ const UNITS: Record<string, string> = {
   vit_e_mg: 'mg',
   vit_b6_mg: 'mg',
   choline_mg: 'mg',
+  saturated_fat_g: 'g',
 }
 
 const NUTRIENT_KEYS = Object.keys(UNITS)
@@ -41,7 +42,6 @@ const T_KEY: Record<string, string> = {
   calcium_mg: 'calcium',
   zinc_mg: 'zinc',
   vit_b12_mcg: 'vit_b12',
-  vit_d_mcg: 'vit_d',
   vit_c_mg: 'vit_c',
   omega3_g: 'omega3',
   potassium_mg: 'potassium',
@@ -54,6 +54,7 @@ const T_KEY: Record<string, string> = {
   vit_e_mg: 'vit_e',
   vit_b6_mg: 'vit_b6',
   choline_mg: 'choline',
+  saturated_fat_g: 'saturated_fat',
 }
 
 export default function NutritionCard({
@@ -65,12 +66,13 @@ export default function NutritionCard({
   grams?: number
   label?: string
 }) {
+  const units = usePrefsStore((s) => s.units)
   const t = useTranslations('nutrition')
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <h2 className="text-xl font-semibold text-gray-900">{ingredient.name}</h2>
-      <p className="mb-4 text-sm text-gray-500">{label ?? `per ${grams}g`}</p>
+      <p className="mb-4 text-sm text-gray-500">{label ?? (units === 'oz' ? `per ${(grams / 28.3495).toFixed(1)} oz` : `per ${grams}g`)}</p>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {NUTRIENT_KEYS.map((key) => {

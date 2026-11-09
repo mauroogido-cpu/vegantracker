@@ -60,7 +60,6 @@ const MICROS: NutritionKey[] = [
   'calcium_mg',
   'zinc_mg',
   'vit_b12_mcg',
-  'vit_d_mcg',
   'vit_c_mg',
   'omega3_g',
 ]

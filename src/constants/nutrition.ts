@@ -25,6 +25,8 @@ export const RDA: Record<string, number> = {
   vit_e_mg: 15,
   vit_b6_mg: 1.7,
   choline_mg: 550,
+  // Saturated fat — WHO upper limit: <10% of 2 000 kcal = ~22 g
+  saturated_fat_g: 22,
 }
 
 /** Ingredient categories with their i18n label keys. */

@@ -107,7 +107,8 @@
     "vit_e": "Vitamina E",
     "vit_b6": "Vitamina B6",
     "choline": "Colina",
-    "rda": "del valor diario"
+    "rda": "del valor diario",
+    "saturated_fat": "Grasas saturadas"
   },
   "meallog": {
     "add": "Agregar comida",
@@ -131,7 +132,10 @@
     "selectIngredient": "Seleccionar ingrediente",
     "addExtra": "Agregar",
     "noHistory": "Sin historial de comidas",
-    "historyTab": "Historial"
+    "historyTab": "Historial",
+    "edit": "Editar",
+    "done": "Listo",
+    "saveChanges": "Guardar cambios"
   },
   "catalog": {
     "title": "Recetas públicas",

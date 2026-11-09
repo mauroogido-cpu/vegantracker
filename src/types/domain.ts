@@ -40,6 +40,7 @@ export type Ingredient = {
   vit_e_mg: number
   vit_b6_mg: number
   choline_mg: number
+  saturated_fat_g: number
 }
 
 export type IngredientCost = {
@@ -146,6 +147,7 @@ export interface NutritionTotals {
   vit_e_mg: number
   vit_b6_mg: number
   choline_mg: number
+  saturated_fat_g: number
 }
 
 export interface DayNutrition {
@@ -153,4 +155,54 @@ export interface DayNutrition {
   totals: NutritionTotals
   cost?: number
   currency?: Currency
+}
+
+// --- Detail types for expandable history ---
+
+export type IngredientNutrients = {
+  id: string
+  name_en: string
+  cal: number
+  protein_g: number
+  carbs_g: number
+  fat_g: number
+  fiber_g: number
+  iron_mg: number
+  calcium_mg: number
+  zinc_mg: number
+  vit_b12_mcg: number
+  vit_d_mcg: number
+  vit_c_mg: number
+  omega3_g: number
+  saturated_fat_g: number
+}
+
+export type RecipeIngredientDetail = {
+  id: string
+  quantity_g: number
+  sort_order: number
+  ingredient: IngredientNutrients
+}
+
+export type RecipeDetail = {
+  id: string
+  name: string
+  servings: number
+  recipe_ingredients: RecipeIngredientDetail[]
+}
+
+export type MealLogDetail = {
+  id: string
+  user_id: string
+  logged_at: string
+  meal_type: string
+  recipe_id: string | null
+  ingredient_id: string | null
+  servings: number | null
+  quantity_g: number | null
+  notes: string | null
+  created_at: string
+  ingredient: IngredientNutrients | null
+  recipe: RecipeDetail | null
+  overrides: MealLogOverride[]
 }

@@ -14,6 +14,17 @@ export const NUTRITION_KEYS = [
   'vit_d_mcg',
   'vit_c_mg',
   'omega3_g',
+  'potassium_mg',
+  'sodium_mg',
+  'selenium_mcg',
+  'vit_a_rae_mcg',
+  'folate_mcg',
+  'magnesium_mg',
+  'vit_k_mcg',
+  'vit_e_mg',
+  'vit_b6_mg',
+  'choline_mg',
+  'saturated_fat_g',
 ] as const
 
 export type NutritionKey = (typeof NUTRITION_KEYS)[number]

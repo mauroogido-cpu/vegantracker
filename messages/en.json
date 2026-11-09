@@ -107,7 +107,8 @@
     "vit_e": "Vitamin E",
     "vit_b6": "Vitamin B6",
     "choline": "Choline",
-    "rda": "of daily value"
+    "rda": "of daily value",
+    "saturated_fat": "Saturated fat"
   },
   "meallog": {
     "add": "Add meal",
@@ -131,7 +132,10 @@
     "selectIngredient": "Select ingredient",
     "addExtra": "Add",
     "noHistory": "No meal history found",
-    "historyTab": "History"
+    "historyTab": "History",
+    "edit": "Edit",
+    "done": "Done",
+    "saveChanges": "Save changes"
   },
   "catalog": {
     "title": "Public recipes",
