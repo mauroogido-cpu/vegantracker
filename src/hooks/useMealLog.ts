@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteMealLog, getDayLog, logMeal } from '@/lib/api/meallog'
+import { deleteMealLog, getDayLog, getMealLogHistory, logMeal } from '@/lib/api/meallog'
 
 export function useDayLog(userId: string, date: string) {
   return useQuery({
@@ -33,5 +33,14 @@ export function useDeleteMealLog() {
       queryClient.invalidateQueries({ queryKey: ['meallog'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
+  })
+}
+
+export function useMealLogHistory(userId: string, fromDate?: string, toDate?: string) {
+  return useQuery({
+    queryKey: ['meallog', 'history', userId, fromDate, toDate],
+    queryFn: () => getMealLogHistory(userId, fromDate, toDate),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
   })
 }
