@@ -21,9 +21,46 @@ import {
 } from '@/lib/nutrition'
 import type { Ingredient, RecipeIngredient } from '@/types/domain'
 
+// Maps each NutritionKey → key inside the 'nutrition' i18n namespace
+const NUTRIENT_I18N: Record<NutritionKey, string> = {
+  cal: 'calories',
+  protein_g: 'protein',
+  carbs_g: 'carbs',
+  fat_g: 'fat',
+  fiber_g: 'fiber',
+  iron_mg: 'iron',
+  calcium_mg: 'calcium',
+  zinc_mg: 'zinc',
+  vit_b12_mcg: 'vitB12',
+  vit_d_mcg: 'vitD',
+  vit_c_mg: 'vitC',
+  omega3_g: 'omega3',
+}
+
+const NUTRIENT_UNITS: Record<NutritionKey, string> = {
+  cal: 'kcal',
+  protein_g: 'g',
+  carbs_g: 'g',
+  fat_g: 'g',
+  fiber_g: 'g',
+  iron_mg: 'mg',
+  calcium_mg: 'mg',
+  zinc_mg: 'mg',
+  vit_b12_mcg: 'mcg',
+  vit_d_mcg: 'mcg',
+  vit_c_mg: 'mg',
+  omega3_g: 'g',
+}
+
+function nutrientValue(item: RecipeIngredient, key: NutritionKey): number {
+  if (!item.ingredient) return 0
+  return (item.ingredient[key] * item.quantity_g) / 100
+}
+
 export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
   const t = useTranslations('recipe')
   const tc = useTranslations('common')
+  const tn = useTranslations('nutrition')
   const { locale } = useParams<{ locale: string }>()
   const { user } = useAuth()
 
@@ -39,6 +76,7 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editGrams, setEditGrams] = useState('')
   const [editNotes, setEditNotes] = useState('')
+  const [sortKey, setSortKey] = useState<NutritionKey>('cal')
 
   const items: RecipeIngredient[] = data?.items ?? []
 
@@ -54,6 +92,12 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
   ) as Record<NutritionKey, number>
   const estimatedCost = useMemo(() => calcRecipeCost(items, costMap), [items, costMap])
   const currency = costs?.[0]?.currency ?? 'USD'
+
+  // Sorted copy — does not change sort_order in DB, only display order
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) => nutrientValue(b, sortKey) - nutrientValue(a, sortKey)),
+    [items, sortKey]
+  )
 
   const totalsAsIngredient = {
     id: 'totals',
@@ -169,19 +213,50 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
         )}
       </section>
 
-      {/* Section B — Ingredient list */}
+      {/* Section B — Ingredient list sorted by nutrient */}
       <section className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+        {/* Section header with sort dropdown */}
+        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+            {t('ingredient')}s
+          </h3>
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="sort-nutrient"
+              className="text-xs font-medium text-gray-500 whitespace-nowrap"
+            >
+              {t('sortBy')}
+            </label>
+            <select
+              id="sort-nutrient"
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as NutritionKey)}
+              className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              {NUTRITION_KEYS.map((key) => (
+                <option key={key} value={key}>
+                  {tn(NUTRIENT_I18N[key])}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <table className="w-full text-left text-sm">
           <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
               <th className="px-4 py-3">{t('ingredient')}</th>
               <th className="px-4 py-3">{t('grams')}</th>
+              <th className="px-4 py-3 text-right">
+                {tn(NUTRIENT_I18N[sortKey])}
+                <span className="ml-1 text-gray-400 normal-case">({NUTRIENT_UNITS[sortKey]})</span>
+              </th>
               <th className="px-4 py-3">{t('notes')}</th>
               <th className="px-4 py-3">{t('actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {items.map((item) => (
+            {sortedItems.map((item) => (
               <tr key={item.id}>
                 {item.id === editingId ? (
                   <>
@@ -196,6 +271,9 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
                         className={inputClass}
                         style={{ width: '80px' }}
                       />
+                    </td>
+                    <td className="px-4 py-3 text-right text-gray-500 tabular-nums">
+                      {nutrientValue(item, sortKey).toFixed(1)}
                     </td>
                     <td className="px-4 py-3 text-gray-700">
                       <input
@@ -240,6 +318,9 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
                       {item.ingredient?.name ?? item.ingredient?.name_en ?? '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-700">{item.quantity_g}</td>
+                    <td className="px-4 py-3 text-right font-medium tabular-nums text-gray-800">
+                      {nutrientValue(item, sortKey).toFixed(1)}
+                    </td>
                     <td className="px-4 py-3 text-gray-700">{item.notes ?? '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
@@ -269,7 +350,7 @@ export default function RecipeBuilder({ recipeId }: { recipeId: string }) {
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">
                   {t('addIngredient')}
                 </td>
               </tr>

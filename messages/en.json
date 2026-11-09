@@ -48,6 +48,7 @@
     "open": "Open",
     "actions": "Actions",
     "ingredient": "Ingredient",
+    "sortBy": "Sort by",
     "category": {
       "breakfast": "Breakfast",
       "lunch": "Lunch",

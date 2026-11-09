@@ -6,8 +6,10 @@
 --
 -- Grains: 8 items  (brown rice, white rice, quinoa, whole-wheat
 --         pasta, buckwheat, millet, amaranth, corn sweet raw)
--- Legumes: 9 items (lentils, chickpeas, black beans, mung beans,
---          green peas, kidney beans, pinto beans, soybeans, edamame)
+-- Legumes: 10 items (lentils, chickpeas, black beans, mung beans,
+--          mung bean sprouts, green peas, kidney beans, pinto beans,
+--          soybeans, edamame)
+-- Vegetables: 1 item (turnip raw)
 -- =============================================================
 
 BEGIN;
@@ -43,7 +45,10 @@ VALUES
 ('Kidney beans (raw)',       'legumes', 337, 22.50, 61.30, 1.06, 15.2, 6.690,  83.00, 2.790, 0.000, 0.000, 4.50, 0.358, 173744),
 ('Pinto beans (raw)',        'legumes', 347, 21.40, 62.60, 1.23, 15.5, 5.070, 113.00, 2.280, 0.000, 0.000, 6.30, 0.237, 175199),
 ('Soybeans (raw)',           'legumes', 446, 36.50, 30.20,19.90,  9.3,15.700, 277.00, 4.890, 0.000, 0.000, 6.00, 1.330, 174270),
-('Edamame (raw)',            'legumes', 147, 13.00, 11.00, 6.80,  4.2, 3.550, 197.00, 0.990, 0.000, 0.000,29.00, 0.376, 169282);
+('Edamame (raw)',            'legumes', 147, 13.00, 11.00, 6.80,  4.2, 3.550, 197.00, 0.990, 0.000, 0.000,29.00, 0.376, 169282),
+('Mung bean sprouts (raw)', 'legumes',  30,  3.04,  5.94, 0.18,  1.8, 0.910,  13.00, 0.410, 0.000, 0.000,13.20, 0.016, 169957),
+('Turnip (raw)',           'vegetables', 28, 0.90,  6.43, 0.10,  1.8, 0.300,  30.00, 0.270, 0.000, 0.000,21.00, 0.040, 170465)
+ON CONFLICT DO NOTHING;
 
 -- =============================================================
 -- INGREDIENT TRANSLATIONS
@@ -90,8 +95,13 @@ JOIN (VALUES
   ('Pinto beans (raw)',       'es', 'Frijoles pintos crudos'),
   ('Soybeans (raw)',          'en', 'Soybeans (raw)'),
   ('Soybeans (raw)',          'es', 'Soya cruda'),
-  ('Edamame (raw)',           'en', 'Edamame (raw)'),
-  ('Edamame (raw)',           'es', 'Edamame crudo')
-) AS t(name_en, locale, name) ON ing.name_en = t.name_en;
+  ('Edamame (raw)',            'en', 'Edamame (raw)'),
+  ('Edamame (raw)',            'es', 'Edamame crudo'),
+  ('Mung bean sprouts (raw)', 'en', 'Mung bean sprouts (raw)'),
+  ('Mung bean sprouts (raw)', 'es', 'Brotes de mung crudos'),
+  ('Turnip (raw)',            'en', 'Turnip (raw)'),
+  ('Turnip (raw)',            'es', 'Nabo crudo')
+) AS t(name_en, locale, name) ON ing.name_en = t.name_en
+ON CONFLICT (ingredient_id, locale) DO NOTHING;
 
 COMMIT;

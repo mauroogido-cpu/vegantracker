@@ -81,6 +81,16 @@ export type RecipeIngredient = {
   ingredient?: Ingredient
 }
 
+export type MealLogOverride = {
+  id: string
+  meal_log_id: string
+  ingredient_id: string
+  quantity_g: number | null   // null when excluded = true
+  excluded: boolean
+}
+
+export type OverrideInput = Pick<MealLogOverride, 'ingredient_id' | 'quantity_g' | 'excluded'>
+
 export type MealLog = {
   id: string
   user_id: string
@@ -92,8 +102,26 @@ export type MealLog = {
   quantity_g: number | null
   notes: string | null
   created_at: string
+  overrides?: MealLogOverride[]   // populated by getDayLog via JOIN
 }
 
+
+export type DayHistorySummary = {
+  logged_at:   string   // YYYY-MM-DD
+  entry_count: number
+  cal:         number
+  protein_g:   number
+  carbs_g:     number
+  fat_g:       number
+  fiber_g:     number
+  iron_mg:     number
+  calcium_mg:  number
+  zinc_mg:     number
+  vit_b12_mcg: number
+  vit_d_mcg:   number
+  vit_c_mg:    number
+  omega3_g:    number
+}
 export interface NutritionTotals {
   cal: number
   protein_g: number
