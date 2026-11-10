@@ -1,5 +1,6 @@
 export type Category = 'fruits' | 'vegetables' | 'grains' | 'legumes' | 'proteins' | 'seeds' | 'other'
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+export type RecipeCategory = 'salads_dips' | 'main_dishes' | 'breads_tortillas' | 'desserts' | 'smoothies'
 export type Currency = 'PEN' | 'ARS' | 'USD' | 'EUR' | 'INR' | 'BRL' | 'JPY'
 export type Locale = 'en' | 'es' | 'pt-BR' | 'ja'
 

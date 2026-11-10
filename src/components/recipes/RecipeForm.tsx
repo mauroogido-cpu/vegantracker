@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCreateRecipe, useUpdateRecipe } from '@/hooks/useRecipes'
 import type { Recipe } from '@/types/domain'
 
-const RECIPE_CATEGORIES = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'other'] as const
+const RECIPE_CATEGORIES = ['salads_dips', 'main_dishes', 'breads_tortillas', 'desserts', 'smoothies'] as const
 
 const recipeSchema = z.object({
   name: z.string().min(1).max(200),
@@ -34,7 +34,7 @@ export default function RecipeForm({
   const [name, setName] = useState(existingRecipe?.name ?? '')
   const [description, setDescription] = useState(existingRecipe?.description ?? '')
   const [servings, setServings] = useState(existingRecipe ? String(existingRecipe.servings) : '1')
-  const [category, setCategory] = useState<string>(existingRecipe?.category ?? 'other')
+  const [category, setCategory] = useState<string>(existingRecipe?.category ?? 'main_dishes')
   const [isPublic, setIsPublic] = useState(existingRecipe?.is_public ?? false)
   const [prepTime, setPrepTime] = useState(
     existingRecipe?.prep_time_min != null ? String(existingRecipe.prep_time_min) : ''

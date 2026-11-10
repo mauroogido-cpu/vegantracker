@@ -51,12 +51,11 @@
     "ingredient": "Ingredient",
     "sortBy": "Sort by",
     "category": {
-      "breakfast": "Breakfast",
-      "lunch": "Lunch",
-      "dinner": "Dinner",
-      "snack": "Snack",
-      "dessert": "Dessert",
-      "other": "Other"
+      "salads_dips": "Salads & Dips",
+      "main_dishes": "Main Dishes",
+      "breads_tortillas": "Breads & Tortillas",
+      "desserts": "Desserts",
+      "smoothies": "Smoothies"
     }
   },
   "ingredient": {

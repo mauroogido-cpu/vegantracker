@@ -51,12 +51,11 @@
     "ingredient": "Ingrediente",
     "sortBy": "Ordenar por",
     "category": {
-      "breakfast": "Desayuno",
-      "lunch": "Almuerzo",
-      "dinner": "Cena",
-      "snack": "Snack",
-      "dessert": "Postre",
-      "other": "Otro"
+      "salads_dips": "Ensaladas y Dips",
+      "main_dishes": "Platos Principales",
+      "breads_tortillas": "Panes y Tortillas",
+      "desserts": "Postres",
+      "smoothies": "Batidos"
     }
   },
   "ingredient": {

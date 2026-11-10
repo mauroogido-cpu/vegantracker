@@ -12,6 +12,9 @@ import { useRecipe, useUserRecipes } from '@/hooks/useRecipes'
 import { getAllIngredients } from '@/lib/api/ingredients'
 import type { MealLog, MealType, OverrideInput } from '@/types/domain'
 
+const RECIPE_CATEGORIES = ['salads_dips', 'main_dishes', 'breads_tortillas', 'desserts', 'smoothies'] as const
+const INGREDIENT_CATEGORIES = ['fruits', 'vegetables', 'grains', 'legumes', 'proteins', 'seeds', 'other'] as const
+
 
 const MEAL_TYPE_VALUES = MEAL_TYPES.map((meal) => meal.value) as [MealType, ...MealType[]]
 
@@ -42,6 +45,8 @@ export default function MealLogForm({
   initialEntry?: MealLog
 }) {
   const t = useTranslations('meallog')
+  const ti = useTranslations('ingredient')
+  const tr = useTranslations('recipe')
   const { locale } = useParams<{ locale: string }>()
   const { user } = useAuth()
   const logMeal = useLogMeal()
@@ -264,9 +269,17 @@ export default function MealLogForm({
             <select id="recipe_id" value={recipeId}
               onChange={(e) => handleRecipeChange(e.target.value)} className={inputClass}>
               <option value="">—</option>
-              {(recipes ?? []).map((recipe) => (
-                <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
-              ))}
+              {RECIPE_CATEGORIES.map((cat) => {
+                const group = (recipes ?? []).filter((r) => r.category === cat)
+                if (group.length === 0) return null
+                return (
+                  <optgroup key={cat} label={tr(`category.${cat}`)}>
+                    {group.map((recipe) => (
+                      <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
             </select>
           </div>
 
@@ -386,9 +399,17 @@ export default function MealLogForm({
                     onChange={(e) => setExtraIngredientId(e.target.value)}
                     className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500">
                     <option value="">— {t('selectIngredient')} —</option>
-                    {availableForExtra.map((ing) => (
-                      <option key={ing.id} value={ing.id}>{ing.name}</option>
-                    ))}
+                    {INGREDIENT_CATEGORIES.map((cat) => {
+                      const group = availableForExtra.filter((i) => i.category === cat)
+                      if (group.length === 0) return null
+                      return (
+                        <optgroup key={cat} label={ti(`category.${cat}`)}>
+                          {group.map((ing) => (
+                            <option key={ing.id} value={ing.id}>{ing.name}</option>
+                          ))}
+                        </optgroup>
+                      )
+                    })}
                   </select>
                   <input type="number" step="0.1" min="0.1" value={extraQuantityG}
                     onChange={(e) => setExtraQuantityG(e.target.value)}
@@ -411,9 +432,17 @@ export default function MealLogForm({
             <select id="ingredient_id" value={ingredientId}
               onChange={(e) => setIngredientId(e.target.value)} className={inputClass}>
               <option value="">—</option>
-              {(ingredients ?? []).map((ingredient) => (
-                <option key={ingredient.id} value={ingredient.id}>{ingredient.name}</option>
-              ))}
+              {INGREDIENT_CATEGORIES.map((cat) => {
+                const group = (ingredients ?? []).filter((i) => i.category === cat)
+                if (group.length === 0) return null
+                return (
+                  <optgroup key={cat} label={ti(`category.${cat}`)}>
+                    {group.map((ing) => (
+                      <option key={ing.id} value={ing.id}>{ing.name}</option>
+                    ))}
+                  </optgroup>
+                )
+              })}
             </select>
           </div>
 
