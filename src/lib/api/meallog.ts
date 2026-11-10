@@ -117,3 +117,96 @@ export async function getMealLogHistory(
 
   return (data ?? []) as DayHistorySummary[]
 }
+
+// ---------------------------------------------------------------------------
+// getDayLogDetail
+// Fetches meal_log entries for a date with full ingredient/recipe nutrition
+// data, used by the expandable history rows.
+// ---------------------------------------------------------------------------
+import type { MealLogDetail, RecipeIngredientDetail } from '@/types/domain'
+
+// Resolve ingredient display name from translations, falling back to name_en
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveIngredientName(row: any, locale: string): string {
+  const translations: { locale: string; name: string }[] = row.ingredient_translations ?? []
+  return translations.find((t) => t.locale === locale)?.name ?? row.name_en ?? '—'
+}
+
+export async function getDayLogDetail(userId: string, date: string, locale: string): Promise<MealLogDetail[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('meal_log')
+    .select(`
+      id, user_id, logged_at, meal_type, recipe_id, ingredient_id, servings, quantity_g, notes, created_at,
+      ingredient:ingredient_id (
+        id, name_en, cal, protein_g, carbs_g, fat_g, fiber_g,
+        iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
+        ingredient_translations ( locale, name )
+      ),
+      recipe:recipe_id (
+        id, name, servings,
+        recipe_ingredients (
+          id, quantity_g, sort_order,
+          ingredient:ingredient_id (
+            id, name_en, cal, protein_g, carbs_g, fat_g, fiber_g,
+            iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
+            ingredient_translations ( locale, name )
+          )
+        )
+      ),
+      meal_log_ingredient_overrides ( id, meal_log_id, ingredient_id, quantity_g, excluded )
+    `)
+    .eq('user_id', userId)
+    .eq('logged_at', date)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('getDayLogDetail failed:', error.message)
+    return []
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as unknown as any[]).map((row) => ({
+    id: row.id,
+    user_id: row.user_id,
+    logged_at: row.logged_at,
+    meal_type: row.meal_type,
+    recipe_id: row.recipe_id,
+    ingredient_id: row.ingredient_id,
+    servings: row.servings,
+    quantity_g: row.quantity_g,
+    notes: row.notes,
+    created_at: row.created_at,
+    ingredient: row.ingredient
+      ? { ...row.ingredient, name_en: resolveIngredientName(row.ingredient, locale) }
+      : null,
+    recipe: row.recipe
+      ? {
+          ...row.recipe,
+          recipe_ingredients: ((row.recipe.recipe_ingredients ?? []) as RecipeIngredientDetail[])
+            .slice()
+            .sort((a, b) => a.sort_order - b.sort_order)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((ri: any) => ({
+              ...ri,
+              ingredient: { ...ri.ingredient, name_en: resolveIngredientName(ri.ingredient, locale) },
+            })),
+        }
+      : null,
+    overrides: row.meal_log_ingredient_overrides ?? [],
+  }))
+}
+
+// ---------------------------------------------------------------------------
+// updateMealLog
+// Delete the existing entry (overrides cascade) and re-insert with new data.
+// ---------------------------------------------------------------------------
+export async function updateMealLog(
+  id: string,
+  payload: LogMealPayload
+): Promise<MealLog | null> {
+  const deleted = await deleteMealLog(id)
+  if (!deleted) return null
+  return logMeal(payload)
+}

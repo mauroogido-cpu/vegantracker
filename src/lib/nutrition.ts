@@ -140,13 +140,83 @@ export function calcDayNutrition(
 }
 
 export function calcRdaPercent(
-  nutrition: Record<NutritionKey, number>
+  nutrition: Record<NutritionKey, number>,
+  rda: Record<string, number> = RDA
 ): Record<NutritionKey, number> {
   const result = {} as Record<NutritionKey, number>
 
   for (const key of NUTRITION_KEYS) {
-    result[key] = Math.min(150, (nutrition[key] / RDA[key]) * 100)
+    const ref = (rda[key] as number | undefined) ?? RDA[key]
+    result[key] = Math.min(150, (nutrition[key] / ref) * 100)
   }
 
   return result
+}
+
+// ── Unified nutrient status ───────────────────────────────────────────────────
+// Single source of truth for color logic used by Dashboard, HistoryView,
+// and any future component. Applies role-aware thresholds:
+//
+//   min_only   → only deficit matters  (protein, fiber, B12, omega-3)
+//   range_amdr → soft min + soft max   (cal, carbs, fat — AMDR-based)
+//   range_ul   → deficit + hard UL     (iron, calcium, zinc, vit D, C …)
+
+import { NUTRIENT_ROLE, NUTRIENT_UL } from '@/constants/nutrition'
+
+export type StatusLabel = 'low' | 'below' | 'good' | 'high' | 'excess'
+
+export interface NutrientStatus {
+  bar:   string       // Tailwind bg-* for filled bars   (Dashboard)
+  dot:   string       // Tailwind bg-* for small circles (HistoryView)
+  label: StatusLabel
+}
+
+/**
+ * Returns the colour + semantic label for a nutrient value.
+ *
+ * @param value    - absolute amount consumed
+ * @param rda      - personalised RDA for this user (from useRDA)
+ * @param key      - nutrient key, e.g. 'iron_mg'
+ */
+export function nutrientStatus(
+  value: number,
+  rda: number,
+  key: string
+): NutrientStatus {
+  const role = NUTRIENT_ROLE[key] ?? 'min_only'
+  const ul   = NUTRIENT_UL[key]
+  const rdaPct = rda > 0 ? (value / rda) * 100 : 0
+
+  // ── 1. Hard upper limit (range_ul only) ───────────────────────────────────
+  if (role === 'range_ul' && ul !== undefined) {
+    if (value > ul)       return { bar: 'bg-red-500',    dot: 'bg-red-500',    label: 'excess' }
+    if (value > ul * 0.8) return { bar: 'bg-orange-400', dot: 'bg-orange-400', label: 'high'   }
+  }
+
+  // ── 2. Deficit check (all roles) ─────────────────────────────────────────
+  if (rdaPct < 50) return { bar: 'bg-red-400',   dot: 'bg-red-400',   label: 'low'   }
+  if (rdaPct < 80) return { bar: 'bg-amber-400', dot: 'bg-yellow-400', label: 'below' }
+
+  // ── 3. Soft upper (range_amdr: cal, carbs, fat) ───────────────────────────
+  if (role === 'range_amdr') {
+    if (rdaPct > 150) return { bar: 'bg-red-400',    dot: 'bg-orange-400', label: 'high' }
+    if (rdaPct > 120) return { bar: 'bg-amber-400',  dot: 'bg-orange-400', label: 'high' }
+  }
+
+  // ── 4. Good range ─────────────────────────────────────────────────────────
+  return { bar: 'bg-green-400', dot: 'bg-green-500', label: 'good' }
+}
+
+// Keep legacy bar/dot helpers for any external callers not yet migrated
+export function nutrientBarColor(percent: number): string {
+  if (percent < 50) return 'bg-red-400'
+  if (percent < 80) return 'bg-amber-400'
+  if (percent <= 130) return 'bg-green-400'
+  return 'bg-amber-400'
+}
+export function nutrientDotColor(percent: number): string {
+  if (percent < 50) return 'bg-red-400'
+  if (percent < 80) return 'bg-yellow-400'
+  if (percent <= 130) return 'bg-green-500'
+  return 'bg-orange-400'
 }

@@ -9,18 +9,22 @@ import { useDayLog, useDeleteMealLog } from '@/hooks/useMealLog'
 import { useUserRecipes } from '@/hooks/useRecipes'
 import { getAllIngredients } from '@/lib/api/ingredients'
 import MealLogModal from './MealLogModal'
+import { usePrefsStore, displayWeight } from '@/stores/usePrefsStore'
 
 interface DayViewProps {
   date: string
   locale: string
+  isEditing?: boolean
 }
 
-export default function DayView({ date, locale }: DayViewProps) {
+export default function DayView({ date, locale, isEditing = false }: DayViewProps) {
   const t = useTranslations('meallog')
   const tc = useTranslations('common')
   const { user } = useAuth()
   const [showModal, setShowModal] = useState(false)
+  const [editingEntry, setEditingEntry] = useState<import('@/types/domain').MealLog | null>(null)
 
+  const units = usePrefsStore((s) => s.units)
   const { data: logs } = useDayLog(user?.id ?? '', date)
   const deleteMealLog = useDeleteMealLog()
 
@@ -86,7 +90,7 @@ export default function DayView({ date, locale }: DayViewProps) {
                         <p className="text-sm font-medium text-gray-900">
                           {entry.recipe_id
                             ? `${recipeMap.get(entry.recipe_id) ?? '—'} × ${entry.servings ?? ''} ${t('servings')}`
-                            : `${ingredientMap.get(entry.ingredient_id ?? '') ?? '—'} · ${entry.quantity_g ?? ''}g`}
+                            : `${ingredientMap.get(entry.ingredient_id ?? '') ?? '—'} · ${entry.quantity_g != null ? displayWeight(entry.quantity_g, units) : '—'}`}
                         </p>
                         {entry.notes && (
                           <p className="text-xs text-gray-500">{entry.notes}</p>
@@ -97,13 +101,24 @@ export default function DayView({ date, locale }: DayViewProps) {
                           </p>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => deleteMealLog.mutate(entry.id)}
-                        className="rounded-lg bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
-                      >
-                        {tc('delete')}
-                      </button>
+                      {isEditing && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingEntry(entry)}
+                            className="rounded-lg bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100"
+                          >
+                            {tc('edit')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteMealLog.mutate(entry.id)}
+                            className="rounded-lg bg-red-50 px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-100"
+                          >
+                            {tc('delete')}
+                          </button>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -130,6 +145,13 @@ export default function DayView({ date, locale }: DayViewProps) {
 
       {showModal && (
         <MealLogModal date={date} onClose={() => setShowModal(false)} />
+      )}
+      {editingEntry && (
+        <MealLogModal
+          date={date}
+          entry={editingEntry}
+          onClose={() => setEditingEntry(null)}
+        />
       )}
     </div>
   )

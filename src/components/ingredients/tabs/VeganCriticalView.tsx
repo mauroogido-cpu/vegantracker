@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import IngredientDetailModal from '@/components/ingredients/IngredientDetailModal'
-import { RDA } from '@/constants/nutrition'
+import { useRDA } from '@/hooks/useRDA'
 import type { Ingredient } from '@/types/domain'
 
 const VEGAN_CRITICAL = [
@@ -72,6 +72,7 @@ type CriticalKey = (typeof VEGAN_CRITICAL)[number]['key']
 
 export default function VeganCriticalView({ ingredients }: { ingredients: Ingredient[] }) {
   const [selected, setSelected] = useState<Ingredient | null>(null)
+  const { rda } = useRDA()
 
   const topByNutrient = useMemo(() => {
     const map = new Map<CriticalKey, Ingredient[]>()
@@ -92,7 +93,7 @@ export default function VeganCriticalView({ ingredients }: { ingredients: Ingred
           className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
         >
           <h3 className="text-sm font-bold text-gray-900">
-            {nutrient.label} (RDA: {RDA[nutrient.key]} {nutrient.unit})
+            {nutrient.label} (RDA: {rda[nutrient.key] ?? 0} {nutrient.unit})
           </h3>
           <p className="mt-1 text-xs text-gray-500">{nutrient.why}</p>
 

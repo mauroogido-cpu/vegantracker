@@ -12,18 +12,34 @@ import { useUserRecipes } from '@/hooks/useRecipes'
 import { getAllIngredients } from '@/lib/api/ingredients'
 import { getRecipeWithIngredients } from '@/lib/api/recipes'
 import {
+  nutrientStatus,
   calcDayNutrition,
   calcRdaPercent,
   calcRecipeNutrition,
   type NutritionKey,
 } from '@/lib/nutrition'
+import { useRDA } from '@/hooks/useRDA'
 
 const getLocalDateString = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-const T_KEY: Record<NutritionKey, string> = {
+type ShownKey =
+  | 'cal'
+  | 'protein_g'
+  | 'carbs_g'
+  | 'fat_g'
+  | 'fiber_g'
+  | 'iron_mg'
+  | 'calcium_mg'
+  | 'zinc_mg'
+  | 'vit_b12_mcg'
+  | 'vit_d_mcg'
+  | 'vit_c_mg'
+  | 'omega3_g'
+
+const T_KEY: Record<ShownKey, string> = {
   cal: 'calories',
   protein_g: 'protein',
   carbs_g: 'carbs',
@@ -38,7 +54,7 @@ const T_KEY: Record<NutritionKey, string> = {
   omega3_g: 'omega3',
 }
 
-const UNITS: Record<NutritionKey, string> = {
+const UNITS: Record<ShownKey, string> = {
   cal: 'kcal',
   protein_g: 'g',
   carbs_g: 'g',
@@ -53,8 +69,8 @@ const UNITS: Record<NutritionKey, string> = {
   omega3_g: 'g',
 }
 
-const MACROS: NutritionKey[] = ['cal', 'protein_g', 'carbs_g', 'fat_g']
-const MICROS: NutritionKey[] = [
+const MACROS: ShownKey[] = ['cal', 'protein_g', 'carbs_g', 'fat_g']
+const MICROS: ShownKey[] = [
   'fiber_g',
   'iron_mg',
   'calcium_mg',
@@ -64,23 +80,25 @@ const MICROS: NutritionKey[] = [
   'omega3_g',
 ]
 
-function barColor(percent: number): string {
-  if (percent < 100) return 'bg-green-400'
-  if (percent <= 120) return 'bg-amber-400'
-  return 'bg-red-400'
-}
 
 function NutrientStat({
   label,
   value,
   unit,
   percent,
+  nk,
+  rawValue,
+  rdaValue,
 }: {
   label: string
   value: string
   unit: string
   percent: number
+  nk: string
+  rawValue: number
+  rdaValue: number
 }) {
+  const status = nutrientStatus(rawValue, rdaValue, nk)
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-3">
       <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
@@ -90,7 +108,7 @@ function NutrientStat({
       <p className="text-xs text-gray-500">{percent.toFixed(0)}%</p>
       <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-gray-100">
         <div
-          className={`h-1.5 rounded ${barColor(percent)}`}
+          className={`h-1.5 rounded ${status.bar}`}
           style={{ width: `${Math.min(100, percent)}%` }}
         />
       </div>
@@ -109,7 +127,7 @@ function NutrientPill({ label, value, unit }: { label: string; value: number; un
   )
 }
 
-const ENTRY_MACROS: NutritionKey[] = ['cal', 'protein_g', 'carbs_g', 'fat_g']
+const ENTRY_MACROS: ShownKey[] = ['cal', 'protein_g', 'carbs_g', 'fat_g']
 
 function EntryNutritionRow({
   perServing,
@@ -166,6 +184,7 @@ export default function DashboardPage() {
   const tMeal = useTranslations('meallog')
   const { locale } = useParams<{ locale: string }>()
   const { user } = useAuth()
+  const { rda }  = useRDA()
 
   const [selectedDate, setSelectedDate] = useState('')
 
@@ -227,7 +246,7 @@ export default function DashboardPage() {
     [dayLogs, recipeDetails, recipeServingsMap, ingredientMap]
   )
 
-  const rdaPercent = useMemo(() => calcRdaPercent(dayNutrition), [dayNutrition])
+  const rdaPercent = useMemo(() => calcRdaPercent(dayNutrition, rda), [dayNutrition, rda])
 
   const logs = dayLogs ?? []
 
@@ -305,6 +324,9 @@ export default function DashboardPage() {
                 value={dayNutrition[key].toFixed(0)}
                 unit={UNITS[key]}
                 percent={rdaPercent[key]}
+                nk={key}
+                rawValue={dayNutrition[key]}
+                rdaValue={rda[key] ?? 1}
               />
             </div>
           ))}
@@ -318,6 +340,9 @@ export default function DashboardPage() {
               value={dayNutrition[key].toFixed(0)}
               unit={UNITS[key]}
               percent={rdaPercent[key]}
+              nk={key}
+              rawValue={dayNutrition[key]}
+              rdaValue={rda[key] ?? 1}
             />
           ))}
         </div>

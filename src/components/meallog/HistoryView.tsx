@@ -7,26 +7,14 @@ import { useAuth } from '@/hooks/useAuth'
 import { useMealLogHistory, useDayLogDetail } from '@/hooks/useMealLog'
 import type { DayHistorySummary, MealLogDetail, IngredientNutrients, MealLogOverride } from '@/types/domain'
 import { usePrefsStore, displayWeight } from '@/stores/usePrefsStore'
+import { useRDA } from '@/hooks/useRDA'
+import { nutrientStatus } from '@/lib/nutrition'
 
-// ---------------------------------------------------------------------------
-// RDA reference (adulto)
-// ---------------------------------------------------------------------------
-const RDA = {
-  cal: 2000, protein_g: 50, carbs_g: 275, fat_g: 78, fiber_g: 28,
-  iron_mg: 18, calcium_mg: 1000, zinc_mg: 11, vit_b12_mcg: 2.4,
-  vit_d_mcg: 15, vit_c_mg: 90, omega3_g: 1.6,
-}
-type NutrKey = keyof typeof RDA
+// NutrKey — subset of nutrient keys used in this component
+type NutrKey = 'cal' | 'protein_g' | 'carbs_g' | 'fat_g' | 'fiber_g' |
+               'iron_mg' | 'calcium_mg' | 'zinc_mg' | 'vit_b12_mcg' |
+               'vit_d_mcg' | 'vit_c_mg' | 'omega3_g'
 
-function pct(v: number | null, k: NutrKey) {
-  if (v == null) return 0
-  return Math.round((v / RDA[k]) * 100)
-}
-function trafficLight(p: number) {
-  if (p >= 80) return 'bg-green-500'
-  if (p >= 50) return 'bg-yellow-400'
-  return 'bg-red-400'
-}
 
 // ---------------------------------------------------------------------------
 // Nutrient column definitions
@@ -121,13 +109,13 @@ const MEAL_LABELS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 // Summary badge (collapsed row)
 // ---------------------------------------------------------------------------
-function NutrientBadge({ label, value, nk, unit }: { label: string; value: number | null; nk: NutrKey; unit: string }) {
-  const p = pct(value, nk)
+function NutrientBadge({ label, value, nk, unit, rda }: { label: string; value: number | null; nk: NutrKey; unit: string; rda: Record<string, number> }) {
+  const status = nutrientStatus(value ?? 0, rda[nk] ?? 1, nk)
   return (
     <div className="flex flex-col items-center gap-0.5">
       <span className="text-[10px] text-gray-400">{label}</span>
       <div className="flex items-center gap-1">
-        <span className={`h-2 w-2 rounded-full ${trafficLight(p)}`} />
+        <span className={`h-2 w-2 rounded-full ${status.dot}`} />
         <span className="text-xs font-medium text-gray-700">
           {value != null ? `${Math.round(value)}${unit}` : '—'}
         </span>
@@ -258,8 +246,9 @@ function DayRow({ day, locale, userId }: DayRowProps) {
   const [expanded, setExpanded] = useState(false)
   const { data: detail, isLoading } = useDayLogDetail(userId, day.logged_at, expanded, locale)
   const units = usePrefsStore((s) => s.units)
+  const { rda } = useRDA()
 
-  const calP = pct(day.cal, 'cal')
+  const calStatus = nutrientStatus(day.cal ?? 0, rda['cal'] ?? 1, 'cal')
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
@@ -291,7 +280,7 @@ function DayRow({ day, locale, userId }: DayRowProps) {
           <div className="flex flex-col items-center ml-2">
             <span className="text-[10px] text-gray-400">Cal</span>
             <div className="flex items-center gap-1">
-              <span className={`h-2 w-2 rounded-full ${trafficLight(calP)}`} />
+              <span className={`h-2 w-2 rounded-full ${calStatus.dot}`} />
               <span className="text-xs font-semibold text-gray-800">
                 {day.cal != null ? Math.round(day.cal) : '—'}
               </span>
@@ -301,20 +290,20 @@ function DayRow({ day, locale, userId }: DayRowProps) {
 
         {/* Macros */}
         <div className="flex flex-wrap gap-3">
-          <NutrientBadge label="Prot"  value={day.protein_g}  nk="protein_g"  unit="g"  />
-          <NutrientBadge label="Carbs" value={day.carbs_g}    nk="carbs_g"    unit="g"  />
-          <NutrientBadge label="Grasa" value={day.fat_g}      nk="fat_g"      unit="g"  />
-          <NutrientBadge label="Fibra" value={day.fiber_g}    nk="fiber_g"    unit="g"  />
+          <NutrientBadge label="Prot"  value={day.protein_g}  nk="protein_g"  unit="g" rda={rda}  />
+          <NutrientBadge label="Carbs" value={day.carbs_g}    nk="carbs_g"    unit="g" rda={rda}  />
+          <NutrientBadge label="Grasa" value={day.fat_g}      nk="fat_g"      unit="g" rda={rda}  />
+          <NutrientBadge label="Fibra" value={day.fiber_g}    nk="fiber_g"    unit="g" rda={rda}  />
         </div>
 
         {/* Micronutrientes */}
         <div className="flex flex-wrap gap-3">
-          <NutrientBadge label="Fe"  value={day.iron_mg}     nk="iron_mg"     unit="mg" />
-          <NutrientBadge label="Ca"  value={day.calcium_mg}  nk="calcium_mg"  unit="mg" />
-          <NutrientBadge label="Zn"  value={day.zinc_mg}     nk="zinc_mg"     unit="mg" />
-          <NutrientBadge label="B12" value={day.vit_b12_mcg} nk="vit_b12_mcg" unit="μg" />
-          <NutrientBadge label="C"   value={day.vit_c_mg}    nk="vit_c_mg"    unit="mg" />
-          <NutrientBadge label="Ω3"  value={day.omega3_g}    nk="omega3_g"    unit="g"  />
+          <NutrientBadge label="Fe"  value={day.iron_mg}     nk="iron_mg"     unit="mg" rda={rda} />
+          <NutrientBadge label="Ca"  value={day.calcium_mg}  nk="calcium_mg"  unit="mg" rda={rda} />
+          <NutrientBadge label="Zn"  value={day.zinc_mg}     nk="zinc_mg"     unit="mg" rda={rda} />
+          <NutrientBadge label="B12" value={day.vit_b12_mcg} nk="vit_b12_mcg" unit="μg" rda={rda} />
+          <NutrientBadge label="C"   value={day.vit_c_mg}    nk="vit_c_mg"    unit="mg" rda={rda} />
+          <NutrientBadge label="Ω3"  value={day.omega3_g}    nk="omega3_g"    unit="g" rda={rda}  />
         </div>
       </button>
 
@@ -372,11 +361,13 @@ export default function HistoryView({ locale }: HistoryViewProps) {
 
   return (
     <div className="space-y-3">
-      {/* Leyenda semáforo */}
-      <div className="flex items-center gap-4 text-xs text-gray-500 mb-1">
+      {/* Leyenda semáforo — 5 estados */}
+      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mb-1">
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-green-500" />≥ 80% RDA</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-yellow-400" />50–79%</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />&lt; 50%</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-orange-400" />Cerca del límite (UL)</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-500" />Excede límite seguro</span>
       </div>
       {history.map((day) => (
         <DayRow key={day.logged_at} day={day} locale={locale} userId={user?.id ?? ''} />

@@ -10,7 +10,8 @@
     "dashboard": "Panel",
     "signOut": "Cerrar sesión",
     "menu": "Menú",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "settings": "Configuración"
   },
   "auth": {
     "login": "Iniciar sesión",

@@ -10,7 +10,8 @@
     "dashboard": "Dashboard",
     "signOut": "Sign out",
     "menu": "Menu",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "settings": "Settings"
   },
   "auth": {
     "login": "Sign in",

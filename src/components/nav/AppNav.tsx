@@ -4,22 +4,22 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { useAuth } from '@/hooks/useAuth'
+import UserMenu from './UserMenu'
 
 export default function AppNav({ locale }: { locale: string }) {
   const t = useTranslations('nav')
   const pathname = usePathname()
-  const { user, signOut } = useAuth()
   const [open, setOpen] = useState(false)
 
   const base = `/${locale}/app`
 
   const links = [
-    { path: `${base}/dashboard`, key: 'dashboard' },
-    { path: `${base}/meallog`, key: 'meallog' },
-    { path: `${base}/recipes`, key: 'recipes' },
-    { path: `${base}/ingredients`, key: 'ingredients' },
-    { path: `${base}/costs`, key: 'costs' },
+    { path: `${base}/dashboard`,   key: 'dashboard'    },
+    { path: `${base}/meallog`,     key: 'meallog'      },
+    { path: `${base}/recipes`,     key: 'recipes'      },
+    { path: `${base}/ingredients`, key: 'ingredients'  },
+    { path: `${base}/costs`,       key: 'costs'        },
+    { path: `${base}/settings`,    key: 'settings'     },
   ] as const
 
   function isActive(path: string) {
@@ -27,7 +27,9 @@ export default function AppNav({ locale }: { locale: string }) {
   }
 
   function linkClass(active: boolean) {
-    return active ? 'bg-green-900 rounded px-2 py-1' : 'rounded px-2 py-1 hover:bg-green-600'
+    return active
+      ? 'bg-green-900 rounded px-2 py-1'
+      : 'rounded px-2 py-1 hover:bg-green-600'
   }
 
   return (
@@ -37,7 +39,7 @@ export default function AppNav({ locale }: { locale: string }) {
           🌱 Vegan Tracker
         </Link>
 
-        {/* Desktop links */}
+        {/* Desktop links + UserMenu */}
         <div className="hidden items-center gap-3 md:flex">
           {links.map((link) => (
             <Link
@@ -48,28 +50,23 @@ export default function AppNav({ locale }: { locale: string }) {
               {t(link.key)}
             </Link>
           ))}
-          {user?.email && <span className="text-sm text-green-100">{user.email}</span>}
-          <button
-            type="button"
-            onClick={() => void signOut()}
-            className="rounded bg-green-800 px-3 py-1 text-sm hover:bg-green-900"
-          >
-            {t('signOut')}
-          </button>
+          <UserMenu locale={locale} />
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          type="button"
-          aria-label={t('menu')}
-          onClick={() => setOpen((value) => !value)}
-          className="md:hidden"
-        >
-          ☰
-        </button>
+        {/* Mobile: hamburger + UserMenu */}
+        <div className="flex items-center gap-2 md:hidden">
+          <UserMenu locale={locale} />
+          <button
+            type="button"
+            aria-label={t('menu')}
+            onClick={() => setOpen((v) => !v)}
+          >
+            ☰
+          </button>
+        </div>
       </div>
 
-      {/* Mobile dropdown */}
+      {/* Mobile dropdown links */}
       {open && (
         <div className="mt-2 flex flex-col gap-1 border-t border-green-600 pt-2 md:hidden">
           {links.map((link) => (
@@ -82,14 +79,6 @@ export default function AppNav({ locale }: { locale: string }) {
               {t(link.key)}
             </Link>
           ))}
-          {user?.email && <span className="text-sm text-green-100">{user.email}</span>}
-          <button
-            type="button"
-            onClick={() => void signOut()}
-            className="rounded bg-green-800 px-3 py-1 text-left text-sm hover:bg-green-900"
-          >
-            {t('signOut')}
-          </button>
         </div>
       )}
     </nav>

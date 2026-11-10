@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { RDA } from '@/constants/nutrition'
+import { useRDA } from '@/hooks/useRDA'
 import type { Ingredient } from '@/types/domain'
 import { usePrefsStore, displayWeight } from '@/stores/usePrefsStore'
 
@@ -68,6 +68,7 @@ export default function NutritionCard({
 }) {
   const units = usePrefsStore((s) => s.units)
   const t = useTranslations('nutrition')
+  const { rda } = useRDA()
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -77,7 +78,7 @@ export default function NutritionCard({
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {NUTRIENT_KEYS.map((key) => {
           const raw = ((ingredient[key as keyof Ingredient] as number) * grams) / 100
-          const rdaPct = Math.min(100, (raw / RDA[key]) * 100)
+          const rdaPct = Math.min(100, (raw / (rda[key] ?? 1)) * 100)
 
           return (
             <div key={key}>

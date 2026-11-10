@@ -7,10 +7,10 @@ import { useTranslations } from 'next-intl'
 import { z } from 'zod'
 import { MEAL_TYPES } from '@/constants/nutrition'
 import { useAuth } from '@/hooks/useAuth'
-import { useLogMeal } from '@/hooks/useMealLog'
+import { useLogMeal, useUpdateMealLog } from '@/hooks/useMealLog'
 import { useRecipe, useUserRecipes } from '@/hooks/useRecipes'
 import { getAllIngredients } from '@/lib/api/ingredients'
-import type { MealType, OverrideInput } from '@/types/domain'
+import type { MealLog, MealType, OverrideInput } from '@/types/domain'
 
 
 const MEAL_TYPE_VALUES = MEAL_TYPES.map((meal) => meal.value) as [MealType, ...MealType[]]
@@ -35,14 +35,18 @@ const ingredientSchema = z.object({
 export default function MealLogForm({
   date,
   onSuccess,
+  initialEntry,
 }: {
   date: string
   onSuccess?: () => void
+  initialEntry?: MealLog
 }) {
   const t = useTranslations('meallog')
   const { locale } = useParams<{ locale: string }>()
   const { user } = useAuth()
   const logMeal = useLogMeal()
+  const updateMeal = useUpdateMealLog()
+  const isEditing = !!initialEntry
 
   // ── Base data ─────────────────────────────────────────────────────────────
   const { data: recipes } = useUserRecipes(user?.id ?? '')
@@ -52,25 +56,34 @@ export default function MealLogForm({
     staleTime: 1000 * 60 * 10,
   })
 
-  // ── Form state ────────────────────────────────────────────────────────────
-  const [mode, setMode] = useState<'recipe' | 'ingredient'>('recipe')
-  const [recipeId, setRecipeId] = useState('')
-  const [servings, setServings] = useState('1')
+  // ── Form state (pre-populated from initialEntry when editing) ─────────────
+  const initMode = initialEntry?.recipe_id ? 'recipe' : 'ingredient'
+  const initOverrides: Record<string, { quantity: string; excluded: boolean }> =
+    Object.fromEntries(
+      (initialEntry?.overrides ?? []).map((o) => [
+        o.ingredient_id,
+        { quantity: o.quantity_g != null ? String(o.quantity_g) : '', excluded: !!o.excluded },
+      ])
+    )
+
+  const [mode, setMode] = useState<'recipe' | 'ingredient'>(initMode)
+  const [recipeId, setRecipeId] = useState(initialEntry?.recipe_id ?? '')
+  const [servings, setServings] = useState(String(initialEntry?.servings ?? 1))
   // Batch mode: total units made in this batch and units eaten
   const [servingMode, setServingMode] = useState<'direct' | 'batch'>('direct')
   const [batchTotal, setBatchTotal] = useState('12')
   const [batchEaten, setBatchEaten] = useState('1')
-  const [ingredientId, setIngredientId] = useState('')
-  const [quantityG, setQuantityG] = useState('100')
-  const [mealType, setMealType] = useState<string>('breakfast')
-  const [notes, setNotes] = useState('')
+  const [ingredientId, setIngredientId] = useState(initialEntry?.ingredient_id ?? '')
+  const [quantityG, setQuantityG] = useState(String(initialEntry?.quantity_g ?? 100))
+  const [mealType, setMealType] = useState<string>(initialEntry?.meal_type ?? 'breakfast')
+  const [notes, setNotes] = useState(initialEntry?.notes ?? '')
   const [error, setError] = useState<string | null>(null)
 
   // ── Override state (recipe mode only) ────────────────────────────────────
   // Maps ingredient_id → { quantity: string (input value), excluded: boolean }
   const [overrides, setOverrides] = useState<
     Record<string, { quantity: string; excluded: boolean }>
-  >({})
+  >(initOverrides)
   // Extra ingredients added on top of the recipe
   const [extras, setExtras] = useState<{ ingredient_id: string; quantity: string }[]>([])
   const [extraIngredientId, setExtraIngredientId] = useState('')
@@ -176,37 +189,41 @@ export default function MealLogForm({
       const parsed = recipeSchema.safeParse({ recipe_id: recipeId, servings: String(effectiveServings), meal_type: mealType, notes: notes || undefined })
       if (!parsed.success) { setError(parsed.error.issues[0]?.message ?? 'Invalid form'); return }
       setError(null)
-      logMeal.mutate(
-        {
-          user_id: user.id,
-          logged_at: date,
-          meal_type: parsed.data.meal_type,
-          recipe_id: parsed.data.recipe_id,
-          ingredient_id: null,
-          servings: parsed.data.servings,
-          quantity_g: null,
-          notes: parsed.data.notes ?? null,
-          overrides: buildOverrides(),
-        },
-        { onSuccess: () => onSuccess?.() }
-      )
+      const payload = {
+        user_id: user.id,
+        logged_at: date,
+        meal_type: parsed.data.meal_type,
+        recipe_id: parsed.data.recipe_id,
+        ingredient_id: null,
+        servings: parsed.data.servings,
+        quantity_g: null,
+        notes: parsed.data.notes ?? null,
+        overrides: buildOverrides(),
+      }
+      if (isEditing && initialEntry) {
+        updateMeal.mutate({ id: initialEntry.id, payload }, { onSuccess: () => onSuccess?.() })
+      } else {
+        logMeal.mutate(payload, { onSuccess: () => onSuccess?.() })
+      }
     } else {
       const parsed = ingredientSchema.safeParse({ ingredient_id: ingredientId, quantity_g: quantityG, meal_type: mealType, notes: notes || undefined })
       if (!parsed.success) { setError(parsed.error.issues[0]?.message ?? 'Invalid form'); return }
       setError(null)
-      logMeal.mutate(
-        {
-          user_id: user.id,
-          logged_at: date,
-          meal_type: parsed.data.meal_type,
-          recipe_id: null,
-          ingredient_id: parsed.data.ingredient_id,
-          servings: null,
-          quantity_g: parsed.data.quantity_g,
-          notes: parsed.data.notes ?? null,
-        },
-        { onSuccess: () => onSuccess?.() }
-      )
+      const payload = {
+        user_id: user.id,
+        logged_at: date,
+        meal_type: parsed.data.meal_type,
+        recipe_id: null,
+        ingredient_id: parsed.data.ingredient_id,
+        servings: null,
+        quantity_g: parsed.data.quantity_g,
+        notes: parsed.data.notes ?? null,
+      }
+      if (isEditing && initialEntry) {
+        updateMeal.mutate({ id: initialEntry.id, payload }, { onSuccess: () => onSuccess?.() })
+      } else {
+        logMeal.mutate(payload, { onSuccess: () => onSuccess?.() })
+      }
     }
   }
 
@@ -428,10 +445,11 @@ export default function MealLogForm({
 
       {error && <p className="text-sm text-red-600">{error}</p>}
       {logMeal.error && <p className="text-sm text-red-600">{logMeal.error.message}</p>}
+      {updateMeal.error && <p className="text-sm text-red-600">{updateMeal.error.message}</p>}
 
-      <button type="submit" disabled={logMeal.isPending}
+      <button type="submit" disabled={logMeal.isPending || updateMeal.isPending}
         className="w-full rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:opacity-60">
-        {mode === 'recipe' ? t('logRecipe') : t('logIngredient')}
+        {isEditing ? t('saveChanges') : (mode === 'recipe' ? t('logRecipe') : t('logIngredient'))}
       </button>
     </form>
   )
