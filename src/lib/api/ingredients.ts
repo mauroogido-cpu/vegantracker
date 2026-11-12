@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/client'
 import type { Ingredient } from '@/types/domain'
+import { normalizeSearch } from '@/lib/normalize'
 
 type IngredientRow = Omit<Ingredient, 'name'> & {
   ingredient_translations: { name: string }[]
@@ -24,12 +25,27 @@ function mapIngredient(row: IngredientRow): Ingredient {
 export async function searchIngredients(query: string, locale: string): Promise<Ingredient[]> {
   const supabase = createClient()
 
+  // Normalize client-side so "maiz" matches rows stored as "Maíz".
+  // The name_normalized column is pre-computed by the DB trigger in
+  // 012_unaccent_search.sql using the same normalize_search() SQL function.
+  const normalized = normalizeSearch(query)
+
   const { data, error } = await supabase
-    .from('ingredients')
-    .select(SELECT_COLUMNS)
-    .filter('ingredient_translations.locale', 'eq', locale)
-    .ilike('ingredient_translations.name', `%${query}%`)
-    .order('name', { referencedTable: 'ingredient_translations', ascending: true })
+    .from('ingredient_translations')
+    .select(`
+      name,
+      ingredients!inner (
+        id, name_en, category, fdc_id, created_at,
+        cal, protein_g, carbs_g, fat_g, fiber_g,
+        iron_mg, calcium_mg, zinc_mg,
+        vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
+        potassium_mg, sodium_mg, selenium_mcg,
+        vit_a_rae_mcg, folate_mcg, magnesium_mg,
+        vit_k_mcg, vit_e_mg, vit_b6_mg, choline_mg
+      )
+    `)
+    .eq('locale', locale)
+    .ilike('name_normalized', `%${normalized}%`)
     .limit(20)
 
   if (error) {
@@ -37,8 +53,16 @@ export async function searchIngredients(query: string, locale: string): Promise<
     return []
   }
 
-  const rows = (data ?? []) as IngredientRow[]
-  return rows.map(mapIngredient)
+  type IngredientFields = Omit<Ingredient, 'name'>
+  type JoinRow = {
+    name: string
+    ingredients: IngredientFields | IngredientFields[]
+  }
+
+  return ((data ?? []) as unknown as JoinRow[]).flatMap((row) => {
+    const ingredient = Array.isArray(row.ingredients) ? row.ingredients[0] : row.ingredients
+    return ingredient ? [{ ...ingredient, name: row.name }] : []
+  })
 }
 
 export async function getAllIngredients(locale: string): Promise<Ingredient[]> {

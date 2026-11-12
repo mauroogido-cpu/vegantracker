@@ -21,10 +21,13 @@ export default function MealLogPage() {
 
   const [activeTab, setActiveTab] = useState<Tab>('today')
   const [todayDate, setTodayDate] = useState('')
+  const [selectedDate, setSelectedDate] = useState('')
   const [isEditing, setIsEditing] = useState(false)
 
   useEffect(() => {
-    setTodayDate(getLocalDateString())
+    const d = getLocalDateString()
+    setTodayDate(d)
+    setSelectedDate(d)
   }, [])
 
   // Reset edit mode when switching tabs
@@ -33,6 +36,8 @@ export default function MealLogPage() {
   }, [activeTab])
 
   if (!user || !todayDate) return null
+
+  const isToday = selectedDate === todayDate
 
   return (
     <div>
@@ -66,18 +71,41 @@ export default function MealLogPage() {
           )}
         </div>
 
-        <div className="flex gap-1 rounded-xl bg-gray-100 p-1 w-fit">
-          <TabButton active={activeTab === 'today'} onClick={() => setActiveTab('today')}>
-            {t('today')}
-          </TabButton>
-          <TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')}>
-            {t('historyTab')}
-          </TabButton>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex gap-1 rounded-xl bg-gray-100 p-1 w-fit">
+            <TabButton active={activeTab === 'today'} onClick={() => setActiveTab('today')}>
+              {t('today')}
+            </TabButton>
+            <TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')}>
+              {t('historyTab')}
+            </TabButton>
+          </div>
+
+          {activeTab === 'today' && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={selectedDate}
+                max={todayDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              {!isToday && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(todayDate)}
+                  className="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200 transition-all"
+                >
+                  {t('today')}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {activeTab === 'today' ? (
-        <DayView date={todayDate} locale={locale} isEditing={isEditing} />
+        <DayView date={selectedDate} locale={locale} isEditing={isEditing} />
       ) : (
         <HistoryView locale={locale} />
       )}

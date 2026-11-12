@@ -207,3 +207,51 @@ export type MealLogDetail = {
   recipe: RecipeDetail | null
   overrides: MealLogOverride[]
 }
+
+// ─────────────────────────────────────────────────────────────
+// USER INGREDIENTS  (manually entered processed foods / local brands)
+// All nutritional fields are nullable — NULL = unknown, NOT zero.
+// ─────────────────────────────────────────────────────────────
+
+export type UserIngredientStatus = 'private' | 'pending_review' | 'rejected'
+
+export type UserIngredient = {
+  id: string
+  user_id: string
+  // Identity
+  name_en: string
+  name_es: string | null
+  brand: string | null
+  barcode: string | null
+  category: Category
+  // Macronutrients per 100 g — all nullable
+  cal: number | null
+  protein_g: number | null
+  carbs_g: number | null
+  fat_g: number | null
+  fiber_g: number | null
+  saturated_fat_g: number | null
+  sugar_g: number | null
+  sodium_mg: number | null
+  // Minerals — all nullable
+  iron_mg: number | null
+  calcium_mg: number | null
+  zinc_mg: number | null
+  // Vitamins — all nullable
+  vit_b12_mcg: number | null
+  vit_d_mcg: number | null
+  vit_c_mg: number | null
+  omega3_g: number | null
+  // Workflow
+  status: UserIngredientStatus
+  submitted_at: string | null
+  source_ingredient_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Subset used when creating or editing a user ingredient */
+export type UserIngredientInput = Omit<
+  UserIngredient,
+  'id' | 'user_id' | 'status' | 'submitted_at' | 'created_at' | 'updated_at'
+>

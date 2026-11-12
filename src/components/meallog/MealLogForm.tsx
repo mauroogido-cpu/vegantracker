@@ -10,7 +10,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useLogMeal, useUpdateMealLog } from '@/hooks/useMealLog'
 import { useRecipe, useUserRecipes } from '@/hooks/useRecipes'
 import { getAllIngredients } from '@/lib/api/ingredients'
-import type { MealLog, MealType, OverrideInput } from '@/types/domain'
+import { getUserIngredients } from '@/lib/api/userIngredients'
+import type { MealLog, MealType, OverrideInput, UserIngredient } from '@/types/domain'
 
 const RECIPE_CATEGORIES = ['salads_dips', 'main_dishes', 'breads_tortillas', 'desserts', 'smoothies'] as const
 const INGREDIENT_CATEGORIES = ['fruits', 'vegetables', 'grains', 'legumes', 'proteins', 'seeds', 'other'] as const
@@ -55,6 +56,12 @@ export default function MealLogForm({
 
   // ── Base data ─────────────────────────────────────────────────────────────
   const { data: recipes } = useUserRecipes(user?.id ?? '')
+  const { data: userIngredients } = useQuery({
+    queryKey: ['user_ingredients'],
+    queryFn: getUserIngredients,
+    staleTime: 1000 * 60 * 5,
+  })
+
   const { data: ingredients } = useQuery({
     queryKey: ['ingredients', 'all', locale],
     queryFn: () => getAllIngredients(locale),
@@ -443,6 +450,15 @@ export default function MealLogForm({
                   </optgroup>
                 )
               })}
+              {(userIngredients ?? []).length > 0 && (
+                <optgroup label="— Mis productos —">
+                  {(userIngredients ?? []).map((ui: UserIngredient) => (
+                    <option key={ui.id} value={ui.id}>
+                      {ui.name_es ?? ui.name_en}{ui.brand ? ` (${ui.brand})` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
 

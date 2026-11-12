@@ -6,6 +6,7 @@ import ComparatorView from '@/components/ingredients/tabs/ComparatorView'
 import NutrientExplorerView from '@/components/ingredients/tabs/NutrientExplorerView'
 import NutrientRankingView from '@/components/ingredients/tabs/NutrientRankingView'
 import VeganCriticalView from '@/components/ingredients/tabs/VeganCriticalView'
+import MyProductsView from '@/components/ingredients/tabs/MyProductsView'
 import type { Ingredient } from '@/types/domain'
 
 const TABS = [
@@ -13,7 +14,8 @@ const TABS = [
   { key: 'ranking', label: 'Ranking' },
   { key: 'critical', label: 'Nutrientes Críticos' },
   { key: 'comparator', label: 'Comparador' },
-  { key: 'explorer', label: 'Explorador' },
+  { key: 'explorer',    label: 'Explorador'    },
+  { key: 'myproducts', label: 'Mis Productos' },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
@@ -50,7 +52,8 @@ export default function IngredientTabs({
       {activeTab === 'ranking' && <NutrientRankingView ingredients={ingredients} />}
       {activeTab === 'critical' && <VeganCriticalView ingredients={ingredients} />}
       {activeTab === 'comparator' && <ComparatorView ingredients={ingredients} />}
-      {activeTab === 'explorer' && <NutrientExplorerView ingredients={ingredients} />}
+      {activeTab === 'explorer'    && <NutrientExplorerView ingredients={ingredients} />}
+      {activeTab === 'myproducts' && <MyProductsView />}
     </div>
   )
 }
