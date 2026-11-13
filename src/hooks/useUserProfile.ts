@@ -11,15 +11,23 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+export type ActivityLevel =
+  | 'sedentary'
+  | 'lightly_active'
+  | 'moderately_active'
+  | 'very_active'
+
 export interface UserProfile {
-  user_id:   string
-  sex:       'male' | 'female' | 'other' | null
-  age:       number | null
-  weight_kg: number | null
-  pregnant:  boolean
-  lactating: boolean
-  locale:    string
-  currency:  string
+  user_id:        string
+  sex:            'male' | 'female' | 'other' | null
+  age:            number | null
+  weight_kg:      number | null
+  height_cm:      number | null
+  activity_level: ActivityLevel
+  pregnant:       boolean
+  lactating:      boolean
+  locale:         string
+  currency:       string
 }
 
 type ProfileInput = Omit<UserProfile, 'user_id'>

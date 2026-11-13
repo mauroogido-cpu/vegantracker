@@ -5,11 +5,11 @@ import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
-import { MEAL_TYPES } from '@/constants/nutrition'
+import { MEAL_TYPES, NUTRIENT_ROLE, NUTRIENT_UL } from '@/constants/nutrition'
 import { useAuth } from '@/hooks/useAuth'
 import { getDayLogDetail } from '@/lib/api/meallog'
 import { nutrientStatus } from '@/lib/nutrition'
-import { useRDA } from '@/hooks/useRDA'
+import { useRDA, type RDAMeta } from '@/hooks/useRDA'
 import { usePrefsStore } from '@/stores/usePrefsStore'
 import {
   NutrTable,
@@ -24,6 +24,13 @@ import {
 const getLocalDateString = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// Use a fixed locale so SSR and client produce identical strings
+function fmt(n: number): string {
+  return n % 1 === 0
+    ? n.toLocaleString('en-US')
+    : n.toLocaleString('en-US', { maximumFractionDigits: 1 })
 }
 
 // ── Nutrient display config ───────────────────────────────────────────────────
@@ -74,15 +81,67 @@ const UNITS: Record<ShownKey, string> = {
 
 const MACROS: ShownKey[] = ['cal', 'protein_g', 'carbs_g', 'fat_g']
 const MICROS: ShownKey[] = [
-  'fiber_g',
-  'iron_mg',
-  'calcium_mg',
-  'zinc_mg',
-  'vit_b12_mcg',
-  'vit_c_mg',
-  'omega3_g',
+  'fiber_g', 'iron_mg', 'calcium_mg', 'zinc_mg',
+  'vit_b12_mcg', 'vit_c_mg', 'omega3_g',
 ]
 const SHOWN_KEYS: ShownKey[] = [...MACROS, ...MICROS]
+
+// ── Build per-nutrient reference label ────────────────────────────────────────
+//
+// Returns up to two lines:
+//   line1 → target / UL values  (always shown)
+//   line2 → explanation of how the target was derived  (shown when personalised)
+
+function buildRefLabels(
+  nk: ShownKey,
+  rdaValue: number,
+  unit: string,
+  meta: RDAMeta,
+): { line1: string; line2: string | null } {
+  const role = NUTRIENT_ROLE[nk] ?? 'min_only'
+  const ul   = NUTRIENT_UL[nk]
+
+  // ── line1: target [· UL] ─────────────────────────────────
+  const targetStr = `meta: ${fmt(rdaValue)} ${unit}`
+  const line1 = role === 'range_ul' && ul !== undefined
+    ? `${targetStr} · UL: ${fmt(ul)} ${unit}`
+    : targetStr
+
+  // ── line2: derivation explanation ─────────────────────────
+  let line2: string | null = null
+
+  if (nk === 'cal' && meta.calSource === 'calculated' && meta.tdee !== null) {
+    line2 = 'Mifflin-St Jeor × nivel actividad'
+  }
+
+  if (nk === 'protein_g' && meta.macrosSource === 'derived' && meta.weightKg !== null) {
+    line2 = `0.8 g/kg peso · ${fmt(meta.weightKg)} kg`
+  }
+
+  if (nk === 'carbs_g' && meta.tdee !== null) {
+    line2 = `AMDR: 45–65% de ${fmt(meta.tdee)} kcal · meta 55%`
+  }
+
+  if (nk === 'fat_g' && meta.tdee !== null) {
+    line2 = `mínimo AMDR: 20% de ${fmt(meta.tdee)} kcal ÷ 9`
+  }
+
+  if (nk === 'iron_mg') {
+    line2 = 'RDA ×1.8 biodisponibilidad vegana'
+  }
+
+  if (nk === 'zinc_mg') {
+    line2 = 'RDA ×1.5 inhibición por fitatos'
+  }
+
+  if (nk === 'omega3_g') {
+    line2 = 'ALA esencial — cubre linaza, chía, nueces'
+  }
+
+  // fat already set above — no override needed
+
+  return { line1, line2 }
+}
 
 // ── NutrientStat card ─────────────────────────────────────────────────────────
 
@@ -94,16 +153,20 @@ function NutrientStat({
   nk,
   rawValue,
   rdaValue,
+  meta,
 }: {
   label:    string
   value:    string
   unit:     string
   percent:  number
-  nk:       string
+  nk:       ShownKey
   rawValue: number
   rdaValue: number
+  meta:     RDAMeta
 }) {
   const status = nutrientStatus(rawValue, rdaValue, nk)
+  const { line1, line2 } = buildRefLabels(nk, rdaValue, unit, meta)
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-3">
       <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
@@ -118,6 +181,23 @@ function NutrientStat({
           style={{ width: `${Math.min(100, percent)}%` }}
         />
       </div>
+      {/* Line 1: target · UL — suppressHydrationWarning because rdaValue comes
+           from TanStack Query and may differ between SSR and client cache */}
+      <p
+        className="mt-1 text-[10px] leading-tight text-gray-400"
+        suppressHydrationWarning
+      >
+        {line1}
+      </p>
+      {/* Line 2: derivation hint (only when personalised) */}
+      {line2 && (
+        <p
+          className="mt-0.5 text-[10px] leading-tight text-gray-300 italic"
+          suppressHydrationWarning
+        >
+          {line2}
+        </p>
+      )}
     </div>
   )
 }
@@ -131,8 +211,8 @@ export default function DashboardPage() {
   const tMeal = useTranslations('meallog')
   const { locale } = useParams<{ locale: string }>()
   const { user }   = useAuth()
-  const { rda }    = useRDA()
-  const units      = usePrefsStore((s) => s.units)
+  const { rda, rdaMeta, source: rdaSource } = useRDA()
+  const units = usePrefsStore((s) => s.units)
 
   const [selectedDate, setSelectedDate] = useState('')
 
@@ -140,7 +220,6 @@ export default function DashboardPage() {
     setSelectedDate(getLocalDateString())
   }, [])
 
-  // Single query: full detail with ingredients + overrides (same source as HistoryView expanded)
   const { data: dayDetail } = useQuery({
     queryKey: ['dashboard', 'detail', user?.id, selectedDate, locale],
     queryFn:  () => getDayLogDetail(user!.id, selectedDate, locale),
@@ -148,13 +227,11 @@ export default function DashboardPage() {
     staleTime: 1000 * 60,
   })
 
-  // Compute daily totals from ingredient rows (overrides applied)
   const dayTotal = useMemo(() => {
     if (!dayDetail?.length) return ZERO_NUTR
     return sumNutr(dayDetail.flatMap((e) => getEntryRows(e)).map((r) => r.nutr))
   }, [dayDetail])
 
-  // Per-nutrient RDA percentages for the shown subset
   const rdaPercent = useMemo(() => {
     return Object.fromEntries(
       SHOWN_KEYS.map((k) => [
@@ -182,6 +259,15 @@ export default function DashboardPage() {
           onChange={(e) => setSelectedDate(e.target.value)}
           className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
         />
+        {rdaSource === 'default' && (
+          <span className="text-xs text-amber-600">
+            ⚠ RDA genérico —{' '}
+            <Link href={`/${locale}/app/settings`} className="underline hover:text-amber-700">
+              completá tu perfil
+            </Link>{' '}
+            para metas personalizadas
+          </span>
+        )}
       </div>
 
       {/* ── Section 1 — Daily Nutrition Summary ─────────────────────────────── */}
@@ -202,6 +288,7 @@ export default function DashboardPage() {
                 nk={key}
                 rawValue={dayTotal[key as NutrKey]}
                 rdaValue={rda[key] ?? 1}
+                meta={rdaMeta}
               />
             </div>
           ))}
@@ -213,12 +300,13 @@ export default function DashboardPage() {
             <NutrientStat
               key={key}
               label={tNut(T_KEY[key])}
-              value={dayTotal[key as NutrKey].toFixed(0)}
+              value={dayTotal[key as NutrKey].toFixed(1)}
               unit={UNITS[key]}
               percent={rdaPercent[key]}
               nk={key}
               rawValue={dayTotal[key as NutrKey]}
               rdaValue={rda[key] ?? 1}
+              meta={rdaMeta}
             />
           ))}
         </div>
@@ -242,7 +330,6 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500">{tDash('noMeals')}</p>
         )}
 
-        {/* Semáforo legend */}
         {logs.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mb-3">
             <span className="flex items-center gap-1">
@@ -267,17 +354,12 @@ export default function DashboardPage() {
           {MEAL_TYPES.map((meal) => {
             const entries = logs.filter((e) => e.meal_type === meal.value)
             if (entries.length === 0) return null
-
             return (
               <div key={meal.value}>
                 <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
                   {tMeal(meal.value)}
                 </h3>
-                <NutrTable
-                  entries={entries}
-                  units={units}
-                  showMealType={false}
-                />
+                <NutrTable entries={entries} units={units} showMealType={false} />
               </div>
             )
           })}
@@ -287,22 +369,16 @@ export default function DashboardPage() {
       {/* ── Section 3 — Quick links ──────────────────────────────────────────── */}
       <section>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Link
-            href={`/${locale}/app/meallog`}
-            className="rounded-lg border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-sm hover:border-primary-400"
-          >
+          <Link href={`/${locale}/app/meallog`}
+            className="rounded-lg border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-sm hover:border-primary-400">
             {tNav('meallog')}
           </Link>
-          <Link
-            href={`/${locale}/app/recipes`}
-            className="rounded-lg border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-sm hover:border-primary-400"
-          >
+          <Link href={`/${locale}/app/recipes`}
+            className="rounded-lg border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-sm hover:border-primary-400">
             {tNav('recipes')}
           </Link>
-          <Link
-            href={`/${locale}/app/ingredients`}
-            className="rounded-lg border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-sm hover:border-primary-400"
-          >
+          <Link href={`/${locale}/app/ingredients`}
+            className="rounded-lg border border-gray-200 bg-white p-4 text-sm font-medium text-gray-800 shadow-sm hover:border-primary-400">
             {tNav('ingredients')}
           </Link>
         </div>

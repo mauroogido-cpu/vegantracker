@@ -2,10 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useUserProfile } from '@/hooks/useUserProfile'
+import { useUserProfile, type ActivityLevel } from '@/hooks/useUserProfile'
 
-const LOCALES  = ['en', 'es'] as const
+const LOCALES    = ['en', 'es'] as const
 const CURRENCIES = ['PEN', 'ARS', 'USD', 'EUR', 'INR', 'BRL', 'JPY'] as const
+
+const ACTIVITY_OPTIONS: { value: ActivityLevel; label: string; desc: string }[] = [
+  { value: 'sedentary',         label: 'Sedentary',          desc: 'Desk job, little/no exercise' },
+  { value: 'lightly_active',    label: 'Lightly active',     desc: 'Light exercise 1–3 days/week' },
+  { value: 'moderately_active', label: 'Moderately active',  desc: 'Moderate exercise 3–5 days/week' },
+  { value: 'very_active',       label: 'Very active',        desc: 'Hard exercise 6–7 days/week' },
+]
 
 type Sex = 'male' | 'female' | 'other' | ''
 
@@ -15,13 +22,15 @@ export default function ProfileForm() {
   const pathname = usePathname()
 
   // ── Form state ──────────────────────────────────────────────
-  const [sex,       setSex]       = useState<Sex>('')
-  const [age,       setAge]       = useState('')
-  const [weightKg,  setWeightKg]  = useState('')
-  const [pregnant,  setPregnant]  = useState(false)
-  const [lactating, setLactating] = useState(false)
-  const [locale,    setLocale]    = useState('es')
-  const [currency,  setCurrency]  = useState('PEN')
+  const [sex,           setSex]           = useState<Sex>('')
+  const [age,           setAge]           = useState('')
+  const [weightKg,      setWeightKg]      = useState('')
+  const [heightCm,      setHeightCm]      = useState('')
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel>('sedentary')
+  const [pregnant,      setPregnant]      = useState(false)
+  const [lactating,     setLactating]     = useState(false)
+  const [locale,        setLocale]        = useState('es')
+  const [currency,      setCurrency]      = useState('PEN')
 
   // ── Populate from loaded profile ────────────────────────────
   useEffect(() => {
@@ -29,6 +38,8 @@ export default function ProfileForm() {
     setSex((profile.sex ?? '') as Sex)
     setAge(profile.age?.toString() ?? '')
     setWeightKg(profile.weight_kg?.toString() ?? '')
+    setHeightCm(profile.height_cm?.toString() ?? '')
+    setActivityLevel(profile.activity_level ?? 'sedentary')
     setPregnant(profile.pregnant)
     setLactating(profile.lactating)
     setLocale(profile.locale)
@@ -38,7 +49,6 @@ export default function ProfileForm() {
   // ── Switch locale in URL after save ─────────────────────────
   useEffect(() => {
     if (!success) return
-    // Replace /[locale]/app/settings → /[newLocale]/app/settings
     const segments = pathname.split('/')
     if (segments[1] !== locale) {
       segments[1] = locale
@@ -49,9 +59,11 @@ export default function ProfileForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     await save({
-      sex:       (sex || null) as 'male' | 'female' | 'other' | null,
-      age:       age       ? Number(age)       : null,
-      weight_kg: weightKg  ? Number(weightKg)  : null,
+      sex:            (sex || null) as 'male' | 'female' | 'other' | null,
+      age:            age       ? Number(age)       : null,
+      weight_kg:      weightKg  ? Number(weightKg)  : null,
+      height_cm:      heightCm  ? Number(heightCm)  : null,
+      activity_level: activityLevel,
       pregnant,
       lactating,
       locale,
@@ -63,7 +75,29 @@ export default function ProfileForm() {
     return <p className="text-sm text-gray-500">Loading profile…</p>
   }
 
-  const showBio = sex === 'female'   // show pregnancy/lactation only for female
+  const showBio = sex === 'female'
+
+  // Show calorie preview if enough data
+  const canPreviewCal =
+    weightKg && heightCm && age && (sex === 'male' || sex === 'female')
+  const previewCal = canPreviewCal
+    ? (() => {
+        const w = Number(weightKg)
+        const h = Number(heightCm)
+        const a = Number(age)
+        const bmr =
+          sex === 'male'
+            ? 10 * w + 6.25 * h - 5 * a + 5
+            : 10 * w + 6.25 * h - 5 * a - 161
+        const pal: Record<ActivityLevel, number> = {
+          sedentary:         1.2,
+          lightly_active:    1.375,
+          moderately_active: 1.55,
+          very_active:       1.725,
+        }
+        return Math.round(bmr * pal[activityLevel])
+      })()
+    : null
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -78,7 +112,8 @@ export default function ProfileForm() {
           leave blank to use generic adult reference values.
         </p>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        {/* Row 1: Sex / Age / Weight / Height */}
+        <div className="grid gap-4 sm:grid-cols-4">
           {/* Sex */}
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700">Sex</label>
@@ -122,7 +157,54 @@ export default function ProfileForm() {
               <span className="pointer-events-none absolute right-3 top-2 text-xs text-gray-400">kg</span>
             </div>
           </div>
+
+          {/* Height */}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">Height</label>
+            <div className="relative">
+              <input
+                type="number"
+                min={50} max={300} step={0.5}
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value)}
+                placeholder="cm"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+              <span className="pointer-events-none absolute right-3 top-2 text-xs text-gray-400">cm</span>
+            </div>
+          </div>
         </div>
+
+        {/* Row 2: Activity level */}
+        <div className="mt-4">
+          <label className="mb-2 block text-sm font-medium text-gray-700">Activity level</label>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {ACTIVITY_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setActivityLevel(opt.value)}
+                className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
+                  activityLevel === opt.value
+                    ? 'border-green-500 bg-green-50 text-green-800'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <span className="block font-medium">{opt.label}</span>
+                <span className="block text-gray-400">{opt.desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Calorie preview */}
+        {previewCal !== null && (
+          <p className="mt-3 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800">
+            📊 Estimated calorie target:{' '}
+            <strong>{previewCal.toLocaleString()} kcal/day</strong>{' '}
+            (Mifflin-St Jeor · {ACTIVITY_OPTIONS.find(o => o.value === activityLevel)?.label})
+          </p>
+        )}
 
         {/* Pregnant / lactating — only for female */}
         {showBio && (

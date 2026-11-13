@@ -5,7 +5,7 @@ export const RDA: Record<string, number> = {
   cal: 2000,
   protein_g: 50,
   carbs_g: 275,
-  fat_g: 78,
+  fat_g: 44,     // 20% of 2000 kcal / 9 — AMDR minimum floor
   fiber_g: 28,
   iron_mg: 18,
   calcium_mg: 1000,
@@ -65,7 +65,7 @@ export const NUTRIENT_ROLE: Record<string, NutrientRole> = {
   cal:         'range_amdr',
   protein_g:   'min_only',
   carbs_g:     'range_amdr',
-  fat_g:       'range_amdr',
+  fat_g:       'min_only',    // only floor matters; excess fat is not flagged
   fiber_g:     'min_only',
   iron_mg:     'range_ul',
   calcium_mg:  'range_ul',
