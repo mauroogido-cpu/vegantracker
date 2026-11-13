@@ -53,9 +53,10 @@ export async function logMeal(payload: LogMealPayload): Promise<MealLog | null> 
       user_id:       entry.user_id,
       logged_at:     entry.logged_at,
       meal_type:     entry.meal_type,
-      recipe_id:     entry.recipe_id     ?? null,
-      ingredient_id: entry.ingredient_id ?? null,
-      servings:      entry.servings      ?? null,
+      recipe_id:          entry.recipe_id          ?? null,
+      ingredient_id:      entry.ingredient_id      ?? null,
+      user_ingredient_id: entry.user_ingredient_id ?? null,
+      servings:           entry.servings           ?? null,
       quantity_g:    entry.quantity_g    ?? null,
       notes:         entry.notes         ?? null,
     },
@@ -138,7 +139,7 @@ export async function getDayLogDetail(userId: string, date: string, locale: stri
   const { data, error } = await supabase
     .from('meal_log')
     .select(`
-      id, user_id, logged_at, meal_type, recipe_id, ingredient_id, servings, quantity_g, notes, created_at,
+      id, user_id, logged_at, meal_type, recipe_id, ingredient_id, user_ingredient_id, servings, quantity_g, notes, created_at,
       ingredient:ingredient_id (
         id, name_en, cal, protein_g, carbs_g, fat_g, fiber_g,
         iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
@@ -155,6 +156,7 @@ export async function getDayLogDetail(userId: string, date: string, locale: stri
           )
         )
       ),
+      user_ingredient:user_ingredient_id ( id, name_en, name_es, cal, protein_g, carbs_g, fat_g, fiber_g, iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g, saturated_fat_g, sugar_g, sodium_mg ),
       meal_log_ingredient_overrides ( id, meal_log_id, ingredient_id, quantity_g, excluded )
     `)
     .eq('user_id', userId)
@@ -174,6 +176,7 @@ export async function getDayLogDetail(userId: string, date: string, locale: stri
     meal_type: row.meal_type,
     recipe_id: row.recipe_id,
     ingredient_id: row.ingredient_id,
+    user_ingredient_id: row.user_ingredient_id,
     servings: row.servings,
     quantity_g: row.quantity_g,
     notes: row.notes,
@@ -194,6 +197,7 @@ export async function getDayLogDetail(userId: string, date: string, locale: stri
             })),
         }
       : null,
+    user_ingredient: row.user_ingredient ?? null,
     overrides: row.meal_log_ingredient_overrides ?? [],
   }))
 }

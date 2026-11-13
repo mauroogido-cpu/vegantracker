@@ -84,6 +84,31 @@ export function getEntryRows(entry: MealLogDetail): IngRow[] {
       nutr: computeNutr(entry.ingredient, entry.quantity_g),
     }]
   }
+  if (entry.user_ingredient && entry.quantity_g != null) {
+    const ui = entry.user_ingredient
+    const nutrSource: IngredientNutrients = {
+      id:              ui.id,
+      name_en:         ui.name_en,
+      cal:             ui.cal          ?? 0,
+      protein_g:       ui.protein_g    ?? 0,
+      carbs_g:         ui.carbs_g      ?? 0,
+      fat_g:           ui.fat_g        ?? 0,
+      fiber_g:         ui.fiber_g      ?? 0,
+      iron_mg:         ui.iron_mg      ?? 0,
+      calcium_mg:      ui.calcium_mg   ?? 0,
+      zinc_mg:         ui.zinc_mg      ?? 0,
+      vit_b12_mcg:     ui.vit_b12_mcg  ?? 0,
+      vit_d_mcg:       ui.vit_d_mcg    ?? 0,
+      vit_c_mg:        ui.vit_c_mg     ?? 0,
+      omega3_g:        ui.omega3_g     ?? 0,
+      saturated_fat_g: ui.saturated_fat_g ?? 0,
+    }
+    return [{
+      name: ui.name_en,
+      qty:  entry.quantity_g,
+      nutr: computeNutr(nutrSource, entry.quantity_g),
+    }]
+  }
   if (entry.recipe && entry.servings != null) {
     const scale  = entry.servings / entry.recipe.servings
     const ovMap  = new Map<string, MealLogOverride>(

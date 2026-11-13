@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useDayLog, useDeleteMealLog } from '@/hooks/useMealLog'
 import { useUserRecipes } from '@/hooks/useRecipes'
 import { getAllIngredients } from '@/lib/api/ingredients'
+import { useUserIngredients } from '@/hooks/useUserIngredients'
 import MealLogModal from './MealLogModal'
 import { usePrefsStore, displayWeight } from '@/stores/usePrefsStore'
 
@@ -42,6 +43,12 @@ export default function DayView({ date, locale, isEditing = false }: DayViewProp
   const ingredientMap = useMemo(
     () => new Map((ingredients ?? []).map((i) => [i.id, i.name] as const)),
     [ingredients]
+  )
+
+  const { data: userIngredients } = useUserIngredients()
+  const userIngredientMap = useMemo(
+    () => new Map((userIngredients ?? []).map((ui) => [ui.id, (locale === 'es' ? ui.name_es ?? ui.name_en : ui.name_en)] as const)),
+    [userIngredients, locale]
   )
 
   const hasEntries = logs && logs.length > 0
@@ -90,6 +97,8 @@ export default function DayView({ date, locale, isEditing = false }: DayViewProp
                         <p className="text-sm font-medium text-gray-900">
                           {entry.recipe_id
                             ? `${recipeMap.get(entry.recipe_id) ?? '—'} × ${entry.servings ?? ''} ${t('servings')}`
+                            : entry.user_ingredient_id
+                            ? `${userIngredientMap.get(entry.user_ingredient_id) ?? '—'} · ${entry.quantity_g != null ? displayWeight(entry.quantity_g, units) : '—'}`
                             : `${ingredientMap.get(entry.ingredient_id ?? '') ?? '—'} · ${entry.quantity_g != null ? displayWeight(entry.quantity_g, units) : '—'}`}
                         </p>
                         {entry.notes && (

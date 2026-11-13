@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useLogMeal, useUpdateMealLog } from '@/hooks/useMealLog'
 import { useRecipe, useUserRecipes } from '@/hooks/useRecipes'
 import { getAllIngredients } from '@/lib/api/ingredients'
-import { getUserIngredients } from '@/lib/api/userIngredients'
+import { useUserIngredients } from '@/hooks/useUserIngredients'
 import type { MealLog, MealType, OverrideInput, UserIngredient } from '@/types/domain'
 
 const RECIPE_CATEGORIES = ['salads_dips', 'main_dishes', 'breads_tortillas', 'desserts', 'smoothies'] as const
@@ -56,11 +56,7 @@ export default function MealLogForm({
 
   // ── Base data ─────────────────────────────────────────────────────────────
   const { data: recipes } = useUserRecipes(user?.id ?? '')
-  const { data: userIngredients } = useQuery({
-    queryKey: ['user_ingredients'],
-    queryFn: getUserIngredients,
-    staleTime: 1000 * 60 * 5,
-  })
+  const { data: userIngredients } = useUserIngredients()
 
   const { data: ingredients } = useQuery({
     queryKey: ['ingredients', 'all', locale],
@@ -85,7 +81,7 @@ export default function MealLogForm({
   const [servingMode, setServingMode] = useState<'direct' | 'batch'>('direct')
   const [batchTotal, setBatchTotal] = useState('12')
   const [batchEaten, setBatchEaten] = useState('1')
-  const [ingredientId, setIngredientId] = useState(initialEntry?.ingredient_id ?? '')
+  const [ingredientId, setIngredientId] = useState(initialEntry?.user_ingredient_id ?? initialEntry?.ingredient_id ?? '')
   const [quantityG, setQuantityG] = useState(String(initialEntry?.quantity_g ?? 100))
   const [mealType, setMealType] = useState<string>(initialEntry?.meal_type ?? 'breakfast')
   const [notes, setNotes] = useState(initialEntry?.notes ?? '')
@@ -207,6 +203,7 @@ export default function MealLogForm({
         meal_type: parsed.data.meal_type,
         recipe_id: parsed.data.recipe_id,
         ingredient_id: null,
+        user_ingredient_id: null,
         servings: parsed.data.servings,
         quantity_g: null,
         notes: parsed.data.notes ?? null,
@@ -221,12 +218,14 @@ export default function MealLogForm({
       const parsed = ingredientSchema.safeParse({ ingredient_id: ingredientId, quantity_g: quantityG, meal_type: mealType, notes: notes || undefined })
       if (!parsed.success) { setError(parsed.error.issues[0]?.message ?? 'Invalid form'); return }
       setError(null)
+      const isUserIngredient = (userIngredients ?? []).some((ui: UserIngredient) => ui.id === parsed.data.ingredient_id)
       const payload = {
         user_id: user.id,
         logged_at: date,
         meal_type: parsed.data.meal_type,
         recipe_id: null,
-        ingredient_id: parsed.data.ingredient_id,
+        ingredient_id:      isUserIngredient ? null : parsed.data.ingredient_id,
+        user_ingredient_id: isUserIngredient ? parsed.data.ingredient_id : null,
         servings: null,
         quantity_g: parsed.data.quantity_g,
         notes: parsed.data.notes ?? null,
@@ -454,7 +453,7 @@ export default function MealLogForm({
                 <optgroup label="— Mis productos —">
                   {(userIngredients ?? []).map((ui: UserIngredient) => (
                     <option key={ui.id} value={ui.id}>
-                      {ui.name_es ?? ui.name_en}{ui.brand ? ` (${ui.brand})` : ''}
+                      {(locale === 'es' ? ui.name_es ?? ui.name_en : ui.name_en)}{ui.brand ? ` (${ui.brand})` : ''}
                     </option>
                   ))}
                 </optgroup>

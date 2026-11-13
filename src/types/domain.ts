@@ -100,6 +100,7 @@ export type MealLog = {
   meal_type: string
   recipe_id: string | null
   ingredient_id: string | null
+  user_ingredient_id: string | null
   servings: number | null
   quantity_g: number | null
   notes: string | null
@@ -199,11 +200,13 @@ export type MealLogDetail = {
   meal_type: string
   recipe_id: string | null
   ingredient_id: string | null
+  user_ingredient_id: string | null
   servings: number | null
   quantity_g: number | null
   notes: string | null
   created_at: string
   ingredient: IngredientNutrients | null
+  user_ingredient: UserIngredient | null
   recipe: RecipeDetail | null
   overrides: MealLogOverride[]
 }
