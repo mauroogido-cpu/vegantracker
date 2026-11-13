@@ -46,11 +46,11 @@ export function useDeleteMealLog() {
   })
 }
 
-export function useMealLogHistory(userId: string, fromDate?: string, toDate?: string) {
+export function useMealLogHistory(fromDate?: string, toDate?: string) {
   return useQuery({
-    queryKey: ['meallog', 'history', userId, fromDate, toDate],
-    queryFn: () => getMealLogHistory(userId, fromDate, toDate),
-    enabled: !!userId,
+    queryKey: ['meallog', 'history', fromDate, toDate],
+    queryFn: () => getMealLogHistory(fromDate, toDate),
+    enabled: true,
     staleTime: 1000 * 60 * 5,
   })
 }

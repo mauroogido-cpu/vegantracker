@@ -188,7 +188,7 @@ export default function HistoryView({ locale }: HistoryViewProps) {
   const toDate   = new Date().toISOString().slice(0, 10)
   const fromDate = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
-  const { data: history, isLoading } = useMealLogHistory(user?.id ?? '', fromDate, toDate)
+  const { data: history, isLoading } = useMealLogHistory(fromDate, toDate)
 
   if (isLoading) {
     return (

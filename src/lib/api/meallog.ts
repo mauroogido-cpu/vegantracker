@@ -95,17 +95,17 @@ export async function deleteMealLog(id: string): Promise<boolean> {
 // ---------------------------------------------------------------------------
 // getMealLogHistory
 // Returns one row per logged date with aggregated nutrition totals.
-// Uses the get_meal_log_history RPC (007_rpc_history.sql).
+// Uses the get_meal_log_history RPC (015_current_user_id_secure_history.sql).
+// The caller is resolved server-side, so no user id is sent.
 // ---------------------------------------------------------------------------
 
 export async function getMealLogHistory(
-  userId: string,
   fromDate?: string,   // YYYY-MM-DD, default: 30 days ago
   toDate?: string      // YYYY-MM-DD, default: today
 ): Promise<DayHistorySummary[]> {
   const supabase = createClient()
 
-  const params: Record<string, string> = { p_user_id: userId }
+  const params: Record<string, string> = {}
   if (fromDate) params.p_from = fromDate
   if (toDate)   params.p_to   = toDate
 
