@@ -157,7 +157,15 @@ export async function getDayLogDetail(userId: string, date: string, locale: stri
         )
       ),
       user_ingredient:user_ingredient_id ( id, name_en, name_es, cal, protein_g, carbs_g, fat_g, fiber_g, iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g, saturated_fat_g, sugar_g, sodium_mg ),
-      meal_log_ingredient_overrides ( id, meal_log_id, ingredient_id, quantity_g, excluded )
+      meal_log_ingredient_overrides (
+        id, meal_log_id, ingredient_id, quantity_g, excluded,
+        ingredient:ingredient_id (
+          id, name_en, cal, protein_g, carbs_g, fat_g, fiber_g,
+          iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
+          saturated_fat_g,
+          ingredient_translations ( locale, name )
+        )
+      )
     `)
     .eq('user_id', userId)
     .eq('logged_at', date)
@@ -198,7 +206,16 @@ export async function getDayLogDetail(userId: string, date: string, locale: stri
         }
       : null,
     user_ingredient: row.user_ingredient ?? null,
-    overrides: row.meal_log_ingredient_overrides ?? [],
+    overrides: ((row.meal_log_ingredient_overrides ?? []) as unknown as any[]).map((ov: any) => ({
+      id:            ov.id,
+      meal_log_id:   ov.meal_log_id,
+      ingredient_id: ov.ingredient_id,
+      quantity_g:    ov.quantity_g,
+      excluded:      ov.excluded,
+      ingredient:    ov.ingredient
+        ? { ...ov.ingredient, name_en: resolveIngredientName(ov.ingredient, locale) }
+        : undefined,
+    })),
   }))
 }
 

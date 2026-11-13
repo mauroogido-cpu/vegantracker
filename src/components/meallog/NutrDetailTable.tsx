@@ -114,13 +114,28 @@ export function getEntryRows(entry: MealLogDetail): IngRow[] {
     const ovMap  = new Map<string, MealLogOverride>(
       entry.overrides.map((o) => [o.ingredient_id, o])
     )
-    return entry.recipe.recipe_ingredients
+
+    // Ingredient IDs that belong to the recipe base
+    const baseIngIds = new Set(entry.recipe.recipe_ingredients.map((ri) => ri.ingredient.id))
+
+    // Rows from recipe base (applying quantity overrides and exclusions)
+    const baseRows = entry.recipe.recipe_ingredients
       .filter((ri) => !ovMap.get(ri.ingredient.id)?.excluded)
       .map((ri) => {
         const ov  = ovMap.get(ri.ingredient.id)
         const qty = ov?.quantity_g != null ? ov.quantity_g : ri.quantity_g * scale
         return { name: ri.ingredient.name_en, qty, nutr: computeNutr(ri.ingredient, qty) }
       })
+
+    // Extra rows: overrides whose ingredient_id is NOT in the recipe base
+    const extraRows = entry.overrides
+      .filter((o) => !o.excluded && !baseIngIds.has(o.ingredient_id) && o.quantity_g != null && o.ingredient)
+      .map((o) => {
+        const qty = o.quantity_g!
+        return { name: o.ingredient!.name_en, qty, nutr: computeNutr(o.ingredient!, qty) }
+      })
+
+    return [...baseRows, ...extraRows]
   }
   return []
 }

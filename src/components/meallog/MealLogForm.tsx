@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
@@ -66,6 +66,7 @@ export default function MealLogForm({
 
   // ── Form state (pre-populated from initialEntry when editing) ─────────────
   const initMode = initialEntry?.recipe_id ? 'recipe' : 'ingredient'
+  // Load ALL overrides into state; extras are separated by useEffect once recipeData loads.
   const initOverrides: Record<string, { quantity: string; excluded: boolean }> =
     Object.fromEntries(
       (initialEntry?.overrides ?? []).map((o) => [
@@ -101,6 +102,25 @@ export default function MealLogForm({
   const { data: recipeData } = useRecipe(recipeId, locale)
   const recipeItems = recipeData?.items ?? []
   const recipeServings = recipeData?.recipe.servings ?? 1
+
+  // When editing an existing entry, separate extras from base overrides once recipe data loads.
+  // recipeData is async, so we can't do this at useState init time.
+  useEffect(() => {
+    if (!isEditing || !recipeData || !(initialEntry?.overrides?.length)) return
+    const baseIds = new Set(recipeData.items.map((ri) => ri.ingredient_id))
+    const extraOverrides = (initialEntry.overrides).filter(
+      (o) => !o.excluded && o.quantity_g != null && !baseIds.has(o.ingredient_id)
+    )
+    if (extraOverrides.length === 0) return
+    setExtras(extraOverrides.map((o) => ({ ingredient_id: o.ingredient_id, quantity: String(o.quantity_g) })))
+    // Remove extras from overrides state so buildOverrides() doesn't double-count them
+    setOverrides((prev) => {
+      const next = { ...prev }
+      for (const o of extraOverrides) delete next[o.ingredient_id]
+      return next
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipeData?.recipe.id])
 
   // Reset overrides when the recipe changes
   function handleRecipeChange(id: string) {

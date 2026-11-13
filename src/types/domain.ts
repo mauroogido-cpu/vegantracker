@@ -89,6 +89,8 @@ export type MealLogOverride = {
   ingredient_id: string
   quantity_g: number | null   // null when excluded = true
   excluded: boolean
+  // Populated by getDayLogDetail for extra ingredients (not in recipe_ingredients)
+  ingredient?: IngredientNutrients
 }
 
 export type OverrideInput = Pick<MealLogOverride, 'ingredient_id' | 'quantity_g' | 'excluded'>
