@@ -8,7 +8,7 @@ type IngredientRow = Omit<Ingredient, 'name'> & {
 
 const SELECT_COLUMNS = `
   id, name_en, category, fdc_id, created_at,
-  cal, protein_g, carbs_g, fat_g, fiber_g,
+  cal, protein_g, carbs_g, fat_g, fiber_g, saturated_fat_g,
   iron_mg, calcium_mg, zinc_mg,
   vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
   potassium_mg, sodium_mg, selenium_mcg,
@@ -36,7 +36,7 @@ export async function searchIngredients(query: string, locale: string): Promise<
       name,
       ingredients!inner (
         id, name_en, category, fdc_id, created_at,
-        cal, protein_g, carbs_g, fat_g, fiber_g,
+        cal, protein_g, carbs_g, fat_g, fiber_g, saturated_fat_g,
         iron_mg, calcium_mg, zinc_mg,
         vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
         potassium_mg, sodium_mg, selenium_mcg,
