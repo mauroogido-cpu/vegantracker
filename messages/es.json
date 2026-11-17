@@ -55,7 +55,9 @@
       "main_dishes": "Platos Principales",
       "breads_tortillas": "Panes y Tortillas",
       "desserts": "Postres",
-      "smoothies": "Batidos"
+      "smoothies": "Batidos",
+      "sauces": "Salsas",
+      "soups": "Sopas"
     }
   },
   "ingredient": {

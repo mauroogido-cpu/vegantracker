@@ -55,7 +55,9 @@
       "main_dishes": "Main Dishes",
       "breads_tortillas": "Breads & Tortillas",
       "desserts": "Desserts",
-      "smoothies": "Smoothies"
+      "smoothies": "Smoothies",
+      "sauces": "Sauces",
+      "soups": "Soups"
     }
   },
   "ingredient": {
