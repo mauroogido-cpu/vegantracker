@@ -13,7 +13,7 @@ import { getAllIngredients } from '@/lib/api/ingredients'
 import { useUserIngredients } from '@/hooks/useUserIngredients'
 import type { MealLog, MealType, OverrideInput, UserIngredient } from '@/types/domain'
 
-const RECIPE_CATEGORIES = ['salads_dips', 'main_dishes', 'breads_tortillas', 'desserts', 'smoothies'] as const
+const RECIPE_CATEGORIES = ['salads_dips', 'main_dishes', 'breads_tortillas', 'desserts', 'smoothies', 'sauces', 'soups'] as const
 const INGREDIENT_CATEGORIES = ['fruits', 'vegetables', 'grains', 'legumes', 'proteins', 'seeds', 'other'] as const
 
 
