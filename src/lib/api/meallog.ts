@@ -143,6 +143,7 @@ export async function getDayLogDetail(userId: string, date: string, locale: stri
       ingredient:ingredient_id (
         id, name_en, cal, protein_g, carbs_g, fat_g, fiber_g,
         iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
+        potassium_mg, sodium_mg, magnesium_mg,
         ingredient_translations ( locale, name )
       ),
       recipe:recipe_id (
@@ -152,6 +153,7 @@ export async function getDayLogDetail(userId: string, date: string, locale: stri
           ingredient:ingredient_id (
             id, name_en, cal, protein_g, carbs_g, fat_g, fiber_g,
             iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
+            potassium_mg, sodium_mg, magnesium_mg,
             ingredient_translations ( locale, name )
           )
         )
@@ -162,7 +164,7 @@ export async function getDayLogDetail(userId: string, date: string, locale: stri
         ingredient:ingredient_id (
           id, name_en, cal, protein_g, carbs_g, fat_g, fiber_g,
           iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
-          saturated_fat_g,
+          saturated_fat_g, potassium_mg, sodium_mg, magnesium_mg,
           ingredient_translations ( locale, name )
         )
       )
@@ -230,4 +232,29 @@ export async function updateMealLog(
   const deleted = await deleteMealLog(id)
   if (!deleted) return null
   return logMeal(payload)
+}
+
+// ---------------------------------------------------------------------------
+// getWeekDetails
+// Fetches the last 7 days (today inclusive) in parallel and returns one
+// MealLogDetail[] per day, oldest-first.
+// ---------------------------------------------------------------------------
+export async function getWeekDetails(
+  userId: string,
+  locale: string,
+): Promise<MealLogDetail[][]> {
+  const today = new Date()
+  const dates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  })
+
+  // Run all 7 fetches concurrently
+  const results = await Promise.all(
+    dates.map((date) => getDayLogDetail(userId, date, locale)),
+  )
+
+  // Return oldest-first
+  return results.reverse()
 }

@@ -46,6 +46,8 @@ interface FormState {
   iron_mg: string
   calcium_mg: string
   zinc_mg: string
+  magnesium_mg: string
+  potassium_mg: string
   // Vitamins
   vit_b12_mcg: string
   vit_d_mcg: string
@@ -58,7 +60,7 @@ function emptyForm(): FormState {
     name_en: '', name_es: '', brand: '', barcode: '', category: 'other',
     cal: '', protein_g: '', carbs_g: '', fat_g: '', fiber_g: '',
     saturated_fat_g: '', sugar_g: '', sodium_mg: '',
-    iron_mg: '', calcium_mg: '', zinc_mg: '',
+    iron_mg: '', calcium_mg: '', zinc_mg: '', magnesium_mg: '', potassium_mg: '',
     vit_b12_mcg: '', vit_d_mcg: '', vit_c_mg: '', omega3_g: '',
   }
 }
@@ -73,6 +75,7 @@ function fromExisting(e: UserIngredient): FormState {
     saturated_fat_g: s(e.saturated_fat_g), sugar_g: s(e.sugar_g),
     sodium_mg: s(e.sodium_mg),
     iron_mg: s(e.iron_mg), calcium_mg: s(e.calcium_mg), zinc_mg: s(e.zinc_mg),
+    magnesium_mg: s(e.magnesium_mg ?? null), potassium_mg: s(e.potassium_mg ?? null),
     vit_b12_mcg: s(e.vit_b12_mcg), vit_d_mcg: s(e.vit_d_mcg),
     vit_c_mg: s(e.vit_c_mg), omega3_g: s(e.omega3_g),
   }
@@ -97,6 +100,8 @@ function toInput(f: FormState): UserIngredientInput {
     iron_mg: toNum(f.iron_mg),
     calcium_mg: toNum(f.calcium_mg),
     zinc_mg: toNum(f.zinc_mg),
+    magnesium_mg: toNum(f.magnesium_mg),
+    potassium_mg: toNum(f.potassium_mg),
     vit_b12_mcg: toNum(f.vit_b12_mcg),
     vit_d_mcg: toNum(f.vit_d_mcg),
     vit_c_mg: toNum(f.vit_c_mg),
@@ -297,10 +302,12 @@ export default function UserIngredientForm({ existing, onSuccess, onCancel }: Pr
 
         {showMicros && (
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <NutrientInput label="Hierro"    unit="mg"  name="iron_mg"     value={form.iron_mg}     onChange={set} />
-            <NutrientInput label="Calcio"    unit="mg"  name="calcium_mg"  value={form.calcium_mg}  onChange={set} />
-            <NutrientInput label="Zinc"      unit="mg"  name="zinc_mg"     value={form.zinc_mg}     onChange={set} />
-            <NutrientInput label="Vit. B12"  unit="mcg" name="vit_b12_mcg" value={form.vit_b12_mcg} onChange={set} />
+            <NutrientInput label="Hierro"    unit="mg"  name="iron_mg"      value={form.iron_mg}      onChange={set} />
+            <NutrientInput label="Calcio"    unit="mg"  name="calcium_mg"   value={form.calcium_mg}   onChange={set} />
+            <NutrientInput label="Zinc"      unit="mg"  name="zinc_mg"      value={form.zinc_mg}      onChange={set} />
+            <NutrientInput label="Magnesio"  unit="mg"  name="magnesium_mg" value={form.magnesium_mg} onChange={set} />
+            <NutrientInput label="Potasio"   unit="mg"  name="potassium_mg" value={form.potassium_mg} onChange={set} />
+            <NutrientInput label="Vit. B12"  unit="mcg" name="vit_b12_mcg"  value={form.vit_b12_mcg}  onChange={set} />
             <NutrientInput label="Vit. D"    unit="mcg" name="vit_d_mcg"   value={form.vit_d_mcg}   onChange={set} />
             <NutrientInput label="Vit. C"    unit="mg"  name="vit_c_mg"    value={form.vit_c_mg}    onChange={set} />
             <NutrientInput label="Omega-3"   unit="g"   name="omega3_g"    value={form.omega3_g}    onChange={set} />

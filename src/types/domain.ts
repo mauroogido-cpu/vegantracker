@@ -179,6 +179,10 @@ export type IngredientNutrients = {
   vit_c_mg: number
   omega3_g: number
   saturated_fat_g: number
+  // extended — may be absent for older DB rows; callers default to 0
+  potassium_mg?: number
+  sodium_mg?: number
+  magnesium_mg?: number
 }
 
 export type RecipeIngredientDetail = {
@@ -242,6 +246,8 @@ export type UserIngredient = {
   iron_mg: number | null
   calcium_mg: number | null
   zinc_mg: number | null
+  magnesium_mg: number | null
+  potassium_mg: number | null
   // Vitamins — all nullable
   vit_b12_mcg: number | null
   vit_d_mcg: number | null

@@ -19,6 +19,9 @@ export type NutrKey =
   | 'vit_d_mcg'
   | 'vit_c_mg'
   | 'omega3_g'
+  | 'potassium_mg'
+  | 'sodium_mg'
+  | 'magnesium_mg'
 
 export type NutrValues = Record<NutrKey, number>
 
@@ -27,23 +30,26 @@ export type IngRow = { name: string; qty: number; nutr: NutrValues }
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 export const NUTR_COLS: { key: NutrKey; label: string; unit: string; dec: number }[] = [
-  { key: 'cal',         label: 'Cal',   unit: '',   dec: 0 },
-  { key: 'protein_g',   label: 'Prot',  unit: 'g',  dec: 1 },
-  { key: 'carbs_g',     label: 'Carbs', unit: 'g',  dec: 1 },
-  { key: 'fat_g',       label: 'Grasa', unit: 'g',  dec: 1 },
-  { key: 'fiber_g',     label: 'Fibra', unit: 'g',  dec: 1 },
-  { key: 'iron_mg',     label: 'Fe',    unit: 'mg', dec: 1 },
-  { key: 'calcium_mg',  label: 'Ca',    unit: 'mg', dec: 0 },
-  { key: 'zinc_mg',     label: 'Zn',    unit: 'mg', dec: 1 },
-  { key: 'vit_b12_mcg', label: 'B12',  unit: 'μg', dec: 1 },
-  { key: 'vit_c_mg',    label: 'C',     unit: 'mg', dec: 0 },
-  { key: 'omega3_g',    label: 'Ω3',    unit: 'g',  dec: 2 },
+  { key: 'cal',          label: 'Cal',   unit: '',   dec: 0 },
+  { key: 'protein_g',    label: 'Prot',  unit: 'g',  dec: 1 },
+  { key: 'carbs_g',      label: 'Carbs', unit: 'g',  dec: 1 },
+  { key: 'fat_g',        label: 'Grasa', unit: 'g',  dec: 1 },
+  { key: 'fiber_g',      label: 'Fibra', unit: 'g',  dec: 1 },
+  { key: 'iron_mg',      label: 'Fe',    unit: 'mg', dec: 1 },
+  { key: 'calcium_mg',   label: 'Ca',    unit: 'mg', dec: 0 },
+  { key: 'zinc_mg',      label: 'Zn',    unit: 'mg', dec: 1 },
+  { key: 'magnesium_mg', label: 'Mg',    unit: 'mg', dec: 0 },
+  { key: 'potassium_mg', label: 'K',     unit: 'mg', dec: 0 },
+  { key: 'sodium_mg',    label: 'Na',    unit: 'mg', dec: 0 },
+  { key: 'vit_c_mg',     label: 'C',     unit: 'mg', dec: 0 },
+  { key: 'omega3_g',     label: 'Ω3',    unit: 'g',  dec: 2 },
 ]
 
 export const ZERO_NUTR: NutrValues = {
   cal: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0,
   iron_mg: 0, calcium_mg: 0, zinc_mg: 0, vit_b12_mcg: 0,
   vit_d_mcg: 0, vit_c_mg: 0, omega3_g: 0,
+  potassium_mg: 0, sodium_mg: 0, magnesium_mg: 0,
 }
 
 // ── Pure helpers ─────────────────────────────────────────────────────────────
@@ -51,18 +57,21 @@ export const ZERO_NUTR: NutrValues = {
 export function computeNutr(ingr: IngredientNutrients, qty: number): NutrValues {
   const f = qty / 100
   return {
-    cal:         ingr.cal         * f,
-    protein_g:   ingr.protein_g   * f,
-    carbs_g:     ingr.carbs_g     * f,
-    fat_g:       ingr.fat_g       * f,
-    fiber_g:     ingr.fiber_g     * f,
-    iron_mg:     ingr.iron_mg     * f,
-    calcium_mg:  ingr.calcium_mg  * f,
-    zinc_mg:     ingr.zinc_mg     * f,
-    vit_b12_mcg: ingr.vit_b12_mcg * f,
-    vit_d_mcg:   ingr.vit_d_mcg   * f,
-    vit_c_mg:    ingr.vit_c_mg    * f,
-    omega3_g:    ingr.omega3_g    * f,
+    cal:          ingr.cal          * f,
+    protein_g:    ingr.protein_g    * f,
+    carbs_g:      ingr.carbs_g      * f,
+    fat_g:        ingr.fat_g        * f,
+    fiber_g:      ingr.fiber_g      * f,
+    iron_mg:      ingr.iron_mg      * f,
+    calcium_mg:   ingr.calcium_mg   * f,
+    zinc_mg:      ingr.zinc_mg      * f,
+    vit_b12_mcg:  ingr.vit_b12_mcg  * f,
+    vit_d_mcg:    ingr.vit_d_mcg    * f,
+    vit_c_mg:     ingr.vit_c_mg     * f,
+    omega3_g:     ingr.omega3_g     * f,
+    potassium_mg: (ingr.potassium_mg ?? 0) * f,
+    sodium_mg:    (ingr.sodium_mg    ?? 0) * f,
+    magnesium_mg: (ingr.magnesium_mg ?? 0) * f,
   }
 }
 
@@ -97,11 +106,14 @@ export function getEntryRows(entry: MealLogDetail): IngRow[] {
       iron_mg:         ui.iron_mg      ?? 0,
       calcium_mg:      ui.calcium_mg   ?? 0,
       zinc_mg:         ui.zinc_mg      ?? 0,
-      vit_b12_mcg:     ui.vit_b12_mcg  ?? 0,
-      vit_d_mcg:       ui.vit_d_mcg    ?? 0,
-      vit_c_mg:        ui.vit_c_mg     ?? 0,
-      omega3_g:        ui.omega3_g     ?? 0,
+      vit_b12_mcg:     ui.vit_b12_mcg     ?? 0,
+      vit_d_mcg:       ui.vit_d_mcg       ?? 0,
+      vit_c_mg:        ui.vit_c_mg        ?? 0,
+      omega3_g:        ui.omega3_g        ?? 0,
       saturated_fat_g: ui.saturated_fat_g ?? 0,
+      potassium_mg:    ui.potassium_mg    ?? 0,
+      sodium_mg:       ui.sodium_mg       ?? 0,
+      magnesium_mg:    ui.magnesium_mg    ?? 0,
     }
     return [{
       name: ui.name_en,
