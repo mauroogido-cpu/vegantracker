@@ -379,8 +379,8 @@ export default function MealLogForm({
                     {/* Quantity input */}
                     <input
                       type="number"
-                      step="0.1"
-                      min="0.1"
+                      step="0.01"
+                      min="0.01"
                       disabled={excluded}
                       value={excluded ? '' : getOverrideQty(ri.ingredient_id, ri.quantity_g)}
                       onChange={(e) => setQty(ri.ingredient_id, e.target.value)}
@@ -404,8 +404,8 @@ export default function MealLogForm({
                       <span className="flex-1 text-sm text-gray-700">{ing?.name ?? extra.ingredient_id}</span>
                       <input
                         type="number"
-                        step="0.1"
-                        min="0.1"
+                        step="0.01"
+                        min="0.01"
                         value={extra.quantity}
                         onChange={(e) => setExtras((prev) =>
                           prev.map((x, i) => i === idx ? { ...x, quantity: e.target.value } : x)
@@ -437,7 +437,7 @@ export default function MealLogForm({
                       )
                     })}
                   </select>
-                  <input type="number" step="0.1" min="0.1" value={extraQuantityG}
+                  <input type="number" step="0.01" min="0.01" value={extraQuantityG}
                     onChange={(e) => setExtraQuantityG(e.target.value)}
                     className={smallInputClass} />
                   <span className="text-xs text-gray-400">g</span>

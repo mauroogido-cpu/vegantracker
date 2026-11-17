@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCreateRecipe, useUpdateRecipe } from '@/hooks/useRecipes'
 import type { Recipe } from '@/types/domain'
 
-const RECIPE_CATEGORIES = ['salads_dips', 'main_dishes', 'breads_tortillas', 'desserts', 'smoothies'] as const
+const RECIPE_CATEGORIES = ['salads_dips', 'main_dishes', 'breads_tortillas', 'desserts', 'smoothies', 'sauces', 'soups'] as const
 
 const recipeSchema = z.object({
   name: z.string().min(1).max(200),

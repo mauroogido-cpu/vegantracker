@@ -13,6 +13,8 @@ const RECIPE_CATEGORIES = [
   'breads_tortillas',
   'desserts',
   'smoothies',
+  'sauces',
+  'soups',
 ] as const
 
 type RecipeCategory = typeof RECIPE_CATEGORIES[number]
@@ -33,6 +35,8 @@ export default function RecipesPage() {
     breads_tortillas: false,
     desserts: false,
     smoothies: false,
+    sauces: false,
+    soups: false,
   })
 
   if (!user) return null
