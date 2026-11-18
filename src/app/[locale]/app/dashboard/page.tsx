@@ -11,6 +11,7 @@ import { getDayLogDetail, getWeekDetails } from '@/lib/api/meallog'
 import { nutrientStatus } from '@/lib/nutrition'
 import { useRDA, type RDAMeta } from '@/hooks/useRDA'
 import { usePrefsStore } from '@/stores/usePrefsStore'
+import { useAllIngredients } from '@/hooks/useIngredients'
 import {
   NutrTable,
   getEntryRows,
@@ -86,6 +87,23 @@ const UNITS: Record<ShownKey, string> = {
   sodium_mg:    'mg',
 }
 
+const LABELS: Record<ShownKey, string> = {
+  cal:          'Calorías',
+  protein_g:    'Proteína',
+  carbs_g:      'Carbohidratos',
+  fat_g:        'Grasas',
+  fiber_g:      'Fibra',
+  iron_mg:      'Hierro',
+  calcium_mg:   'Calcio',
+  zinc_mg:      'Zinc',
+  vit_d_mcg:    'Vitamina D',
+  vit_c_mg:     'Vitamina C',
+  omega3_g:     'Omega-3',
+  magnesium_mg: 'Magnesio',
+  potassium_mg: 'Potasio',
+  sodium_mg:    'Sodio',
+}
+
 const MACROS: ShownKey[] = ['cal', 'protein_g', 'carbs_g', 'fat_g']
 const MICROS: ShownKey[] = [
   'fiber_g', 'iron_mg', 'calcium_mg', 'zinc_mg',
@@ -129,6 +147,128 @@ function buildRefLabels(
   if (nk === 'omega3_g')  line2 = 'ALA esencial — cubre linaza, chía, nueces'
 
   return { line1, line2 }
+}
+
+// ── NutrientRankingModal ──────────────────────────────────────────────────────
+
+type Ingredient = Record<string, number | string>
+
+const TOP_OPTIONS = [5, 10, 20]
+
+function NutrientRankingModal({
+  nk,
+  label,
+  unit,
+  ingredients,
+  onClose,
+}: {
+  nk:          ShownKey
+  label:       string
+  unit:        string
+  ingredients: Ingredient[]
+  onClose:     () => void
+}) {
+  const [topN, setTopN] = useState(10)
+
+  const ranking = useMemo(
+    () =>
+      [...ingredients]
+        .sort((a, b) => (b[nk] as number) - (a[nk] as number))
+        .slice(0, topN),
+    [ingredients, nk, topN],
+  )
+
+  const max = (ranking[0]?.[nk] as number) ?? 0
+
+  // Close on backdrop click
+  const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) onClose()
+  }
+
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={handleBackdrop}
+    >
+      <div className="relative w-full max-w-md rounded-xl bg-white shadow-xl flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">
+              Top fuentes · {label}
+            </h3>
+            <p className="text-xs text-gray-400">por 100 g de alimento</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <select
+              value={topN}
+              onChange={(e) => setTopN(Number(e.target.value))}
+              className="rounded-md border border-gray-300 px-2 py-1.5 text-xs text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              {TOP_OPTIONS.map((v) => (
+                <option key={v} value={v}>Top {v}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              aria-label="Cerrar"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="overflow-y-auto px-4 py-3">
+          {ranking.length === 0 ? (
+            <p className="py-6 text-center text-sm text-gray-400">Sin resultados</p>
+          ) : (
+            <ul className="space-y-2">
+              {ranking.map((ingredient, index) => {
+                const value = ingredient[nk] as number
+                const pct = max > 0 ? (value / max) * 100 : 0
+                return (
+                  <li key={ingredient.id as string}>
+                    <div className="rounded-lg border border-gray-200 bg-white p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="truncate text-sm text-gray-900">
+                          <span className="mr-2 text-xs font-semibold text-gray-400">
+                            {index + 1}.
+                          </span>
+                          {ingredient.name as string}
+                        </span>
+                        <span className="shrink-0 text-sm font-medium text-gray-900">
+                          {value.toFixed(1)} {unit}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded bg-gray-100">
+                        <div
+                          className="h-1.5 rounded bg-green-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── MacroDonut ────────────────────────────────────────────────────────────────
@@ -229,6 +369,7 @@ function NutrientStat({
   rawValue,
   rdaValue,
   meta,
+  onClick,
 }: {
   label:    string
   value:    string
@@ -238,12 +379,17 @@ function NutrientStat({
   rawValue: number
   rdaValue: number
   meta:     RDAMeta
+  onClick:  () => void
 }) {
   const status = nutrientStatus(rawValue, rdaValue, nk)
   const { line1, line2 } = buildRefLabels(nk, rdaValue, unit, meta)
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3">
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full text-left rounded-lg border border-gray-200 bg-white p-3 transition hover:border-primary-400 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400"
+    >
       <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
       <p className="text-lg font-semibold text-gray-900">
         {value}{' '}
@@ -270,7 +416,7 @@ function NutrientStat({
           {line2}
         </p>
       )}
-    </div>
+    </button>
   )
 }
 
@@ -292,6 +438,8 @@ export default function DashboardPage() {
   const [viewMode, setViewMode]         = useState<ViewMode>('today')
   // Track whether the user manually chose a mode (overrides auto-fallback)
   const [userChoseMode, setUserChoseMode] = useState(false)
+  // Nutrient ranking modal
+  const [rankingNk, setRankingNk] = useState<ShownKey | null>(null)
 
   useEffect(() => {
     setSelectedDate(getLocalDateString())
@@ -312,6 +460,9 @@ export default function DashboardPage() {
     enabled:  !!user,
     staleTime: 1000 * 60 * 5,
   })
+
+  // ── Ingredients for ranking modal ─────────────────────────────────────────
+  const { data: ingredients } = useAllIngredients(locale)
 
   // ── Auto-fallback: if no data today and week has data, switch to week ─────
   useEffect(() => {
@@ -475,6 +626,7 @@ export default function DashboardPage() {
                   rawValue={dayTotal[key as NutrKey]}
                   rdaValue={rda[key] ?? 1}
                   meta={rdaMeta}
+                  onClick={() => setRankingNk(key)}
                 />
               </div>
             ))}
@@ -494,6 +646,7 @@ export default function DashboardPage() {
               rawValue={dayTotal[key as NutrKey]}
               rdaValue={rda[key] ?? 1}
               meta={rdaMeta}
+              onClick={() => setRankingNk(key)}
             />
           ))}
         </div>
@@ -572,6 +725,17 @@ export default function DashboardPage() {
           </Link>
         </div>
       </section>
+
+      {/* ── Nutrient ranking modal ───────────────────────────────────────────── */}
+      {rankingNk && ingredients && (
+        <NutrientRankingModal
+          nk={rankingNk}
+          label={LABELS[rankingNk]}
+          unit={UNITS[rankingNk]}
+          ingredients={ingredients as unknown as Ingredient[]}
+          onClose={() => setRankingNk(null)}
+        />
+      )}
     </div>
   )
 }
