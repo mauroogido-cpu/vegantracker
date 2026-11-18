@@ -11,7 +11,8 @@
     "signOut": "Sign out",
     "menu": "Menu",
     "logout": "Sign out",
-    "settings": "Settings"
+    "settings": "Settings",
+    "despensa": "Pantry"
   },
   "auth": {
     "login": "Sign in",

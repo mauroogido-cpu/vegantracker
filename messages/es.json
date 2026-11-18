@@ -11,7 +11,8 @@
     "signOut": "Cerrar sesión",
     "menu": "Menú",
     "logout": "Cerrar sesión",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "despensa": "Despensa"
   },
   "auth": {
     "login": "Iniciar sesión",

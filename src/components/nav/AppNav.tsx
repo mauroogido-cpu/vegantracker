@@ -20,6 +20,7 @@ export default function AppNav({ locale }: { locale: string }) {
     { path: `${base}/ingredients`, key: 'ingredients'  },
     { path: `${base}/costs`,       key: 'costs'        },
     { path: `${base}/settings`,    key: 'settings'     },
+    { path: `${base}/despensa`,    key: 'despensa'     },
   ] as const
 
   function isActive(path: string) {
