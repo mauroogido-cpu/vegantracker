@@ -1,95 +1,118 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
-import type { StockItem, Supplier } from '@/types/stock'
+import { CURRENCIES } from '@/constants/nutrition'
+import type { Currency } from '@/types/domain'
+import type {
+  CreatePurchaseInput,
+  PurchaseIngredientOption,
+  StockItemWithIngredient,
+  Supplier,
+} from '@/types/stock'
 
 interface LineItem {
-  stock_item_id: string
-  gross_qty_g: number
-  yield_pct: number
-  price_per_100g: number
+  /** '' | 'stock:<uuid>' | 'ingredient:<uuid>' */
+  selection: string
+  quantity_gross: number
+  yield_pct_snap: number
+  price_paid: number
 }
 
 interface Props {
-  stockItems: StockItem[]
+  stockItems: StockItemWithIngredient[]
+  /** Ingredientes del catálogo que todavía no tienen stock_item */
+  ingredients: PurchaseIngredientOption[]
   suppliers: Supplier[]
-  currency?: string
-  onSuccess?: () => void
+  locale: string
 }
 
-export default function NuevaCompraForm({ stockItems, suppliers, currency = 'PEN', onSuccess }: Props) {
+const newLine = (): LineItem => ({
+  selection: '',
+  quantity_gross: 0,
+  yield_pct_snap: 100,
+  price_paid: 0,
+})
+
+const stockValue = (id: string) => `stock:${id}`
+const ingredientValue = (id: string) => `ingredient:${id}`
+
+export default function NuevaCompraForm({ stockItems, ingredients, suppliers, locale }: Props) {
   const t = useTranslations('stock.purchases')
-  const supabase = createClient()
+  const router = useRouter()
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [currency, setCurrency] = useState<Currency>('PEN')
   const [supplierId, setSupplierId] = useState('')
   const [notes, setNotes] = useState('')
-  const [lines, setLines] = useState<LineItem[]>([
-    { stock_item_id: '', gross_qty_g: 0, yield_pct: 100, price_per_100g: 0 },
-  ])
+  const [lines, setLines] = useState<LineItem[]>([newLine()])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const sym = currency === 'PEN' ? 'S/' : '$'
+  const sym = currency === 'PEN' ? 'S/' : currency
 
-  const addLine = () =>
-    setLines((prev) => [
-      ...prev,
-      { stock_item_id: '', gross_qty_g: 0, yield_pct: 100, price_per_100g: 0 },
-    ])
+  const addLine = () => setLines((prev) => [...prev, newLine()])
 
   const removeLine = (i: number) => setLines((prev) => prev.filter((_, idx) => idx !== i))
 
   const updateLine = (i: number, patch: Partial<LineItem>) =>
     setLines((prev) => prev.map((l, idx) => (idx === i ? { ...l, ...patch } : l)))
 
-  const totalAmount = lines.reduce((acc, l) => {
-    const net = l.gross_qty_g * (l.yield_pct / 100)
-    return acc + net * (l.price_per_100g / 100)
-  }, 0)
+  const selectItem = (i: number, selection: string) => {
+    const stockId = selection.startsWith('stock:') ? selection.slice('stock:'.length) : null
+    const stockItem = stockId ? stockItems.find((s) => s.id === stockId) : null
+    updateLine(i, {
+      selection,
+      yield_pct_snap: stockItem?.yield_pct ?? 100,
+    })
+  }
+
+  const lineNet = (l: LineItem) => l.quantity_gross * (l.yield_pct_snap / 100)
+
+  const totalAmount = lines.reduce((acc, l) => acc + (l.price_paid || 0), 0)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSubmitting(true)
     setError(null)
+
+    const validLines = lines.filter((l) => l.selection && l.quantity_gross > 0)
+    if (validLines.length === 0) {
+      setError(t('errorNoItems'))
+      return
+    }
+
+    const payload: CreatePurchaseInput = {
+      supplier_id: supplierId || undefined,
+      purchased_at: date,
+      currency,
+      total_paid: totalAmount,
+      notes: notes || undefined,
+      items: validLines.map((l) => {
+        const [kind, id] = l.selection.split(':')
+        return {
+          ...(kind === 'stock' ? { stock_item_id: id } : { ingredient_id: id }),
+          quantity_gross: l.quantity_gross,
+          yield_pct_snap: l.yield_pct_snap,
+          price_paid: l.price_paid,
+        }
+      }),
+    }
+
+    setSubmitting(true)
     try {
-      const { data: purchase, error: pe } = await supabase
-        .from('purchases')
-        .insert({
-          purchase_date: date,
-          supplier_id: supplierId || null,
-          currency,
-          notes: notes || null,
-          total_amount: totalAmount,
-        })
-        .select('id')
-        .single()
-      if (pe || !purchase) throw pe ?? new Error('No purchase returned')
-
-      const lineRows = lines
-        .filter((l) => l.stock_item_id && l.gross_qty_g > 0)
-        .map((l) => {
-          const net = l.gross_qty_g * (l.yield_pct / 100)
-          return {
-            purchase_id: purchase.id,
-            stock_item_id: l.stock_item_id,
-            gross_qty_g: l.gross_qty_g,
-            yield_pct: l.yield_pct,
-            net_qty_g: net,
-            price_per_100g: l.price_per_100g,
-            subtotal: net * (l.price_per_100g / 100),
-          }
-        })
-
-      if (lineRows.length) {
-        const { error: le } = await supabase.from('purchase_lines').insert(lineRows)
-        if (le) throw le
+      const res = await fetch('/api/stock/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? t('errorSave'))
       }
-
-      onSuccess?.()
+      router.push(`/${locale}/app/despensa/compras`)
+      router.refresh()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Error')
+      setError(err instanceof Error ? err.message : t('errorSave'))
     } finally {
       setSubmitting(false)
     }
@@ -124,9 +147,15 @@ export default function NuevaCompraForm({ stockItems, suppliers, currency = 'PEN
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">{t('currency')}</label>
-            <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
-              {currency}
-            </div>
+            <select
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as Currency)}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">{t('supplier')}</label>
@@ -158,8 +187,7 @@ export default function NuevaCompraForm({ stockItems, suppliers, currency = 'PEN
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-gray-700">{t('itemsSection')}</h3>
         {lines.map((line, i) => {
-          const net = line.gross_qty_g * (line.yield_pct / 100)
-          const subtotal = net * (line.price_per_100g / 100)
+          const net = lineNet(line)
           return (
             <div key={i} className="rounded-lg border border-gray-200 p-4 space-y-3 bg-gray-50">
               <div className="flex items-center justify-between">
@@ -178,15 +206,30 @@ export default function NuevaCompraForm({ stockItems, suppliers, currency = 'PEN
                 <div className="sm:col-span-2">
                   <label className="block text-xs text-gray-500 mb-1">{t('ingredientLabel')}</label>
                   <select
-                    value={line.stock_item_id}
-                    onChange={(e) => updateLine(i, { stock_item_id: e.target.value })}
+                    value={line.selection}
+                    onChange={(e) => selectItem(i, e.target.value)}
                     required
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none"
                   >
                     <option value="">{t('selectIngredient')}</option>
-                    {stockItems.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
+                    {stockItems.length > 0 && (
+                      <optgroup label={t('groupInStock')}>
+                        {stockItems.map((s) => (
+                          <option key={s.id} value={stockValue(s.id)}>
+                            {s.ingredient?.name_en ?? s.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {ingredients.length > 0 && (
+                      <optgroup label={t('groupCatalog')}>
+                        {ingredients.map((ing) => (
+                          <option key={ing.id} value={ingredientValue(ing.id)}>
+                            {ing.name}{ing.category ? ` · ${ing.category}` : ''}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -195,8 +238,8 @@ export default function NuevaCompraForm({ stockItems, suppliers, currency = 'PEN
                     type="number"
                     min={0}
                     step={0.1}
-                    value={line.gross_qty_g || ''}
-                    onChange={(e) => updateLine(i, { gross_qty_g: parseFloat(e.target.value) || 0 })}
+                    value={line.quantity_gross || ''}
+                    onChange={(e) => updateLine(i, { quantity_gross: parseFloat(e.target.value) || 0 })}
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none"
                   />
                 </div>
@@ -207,8 +250,8 @@ export default function NuevaCompraForm({ stockItems, suppliers, currency = 'PEN
                     min={1}
                     max={100}
                     step={1}
-                    value={line.yield_pct}
-                    onChange={(e) => updateLine(i, { yield_pct: parseFloat(e.target.value) || 100 })}
+                    value={line.yield_pct_snap}
+                    onChange={(e) => updateLine(i, { yield_pct_snap: parseFloat(e.target.value) || 100 })}
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none"
                   />
                 </div>
@@ -220,8 +263,8 @@ export default function NuevaCompraForm({ stockItems, suppliers, currency = 'PEN
                     type="number"
                     min={0}
                     step={0.01}
-                    value={line.price_per_100g || ''}
-                    onChange={(e) => updateLine(i, { price_per_100g: parseFloat(e.target.value) || 0 })}
+                    value={line.price_paid || ''}
+                    onChange={(e) => updateLine(i, { price_paid: parseFloat(e.target.value) || 0 })}
                     className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none"
                   />
                 </div>
@@ -229,7 +272,7 @@ export default function NuevaCompraForm({ stockItems, suppliers, currency = 'PEN
                   {t('netCalc', {
                     net: net.toFixed(1),
                     currency: sym,
-                    price: subtotal.toFixed(2),
+                    price: (net > 0 ? (line.price_paid / net) * 100 : 0).toFixed(2),
                   })}
                 </div>
               </div>
@@ -252,7 +295,7 @@ export default function NuevaCompraForm({ stockItems, suppliers, currency = 'PEN
           {t('total', {
             currency: sym,
             amount: totalAmount.toFixed(2),
-            n: lines.filter((l) => l.stock_item_id).length,
+            n: lines.filter((l) => l.selection).length,
           })}
         </span>
         <button

@@ -148,10 +148,38 @@ export interface PurchaseItemDetail extends PurchaseItem {
   }
 }
 
-// Payload para crear una compra completa en un solo paso
+// Línea de compra tal como la envía el formulario.
+// Si la línea trae ingredient_id (y no stock_item_id), el API crea
+// el stock_item correspondiente antes de insertar la línea.
+export interface PurchaseLineInput {
+  stock_item_id?: string
+  ingredient_id?: string
+  quantity_gross:  number
+  yield_pct_snap:  number
+  price_paid:      number
+}
+
+// Payload que envían el formulario y el endpoint /api/stock/purchases
+export interface CreatePurchaseInput {
+  supplier_id?:  string
+  purchased_at:  string
+  currency:      string
+  total_paid?:   number
+  notes?:        string
+  items:         PurchaseLineInput[]
+}
+
+// Payload de inserción directa a la DB (cabecera + líneas completas)
 export interface CreatePurchasePayload {
   purchase: PurchaseInsert
   items: Array<Omit<PurchaseItemInsert, 'purchase_id'>>
+}
+
+// Opción del catálogo de ingredientes para el select de compras
+export interface PurchaseIngredientOption {
+  id:        string
+  name:      string
+  category:  string | null
 }
 
 // Vista completa de una compra con líneas e items

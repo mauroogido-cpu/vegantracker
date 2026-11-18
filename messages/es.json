@@ -234,6 +234,8 @@
       "removeItem": "✕ Quitar",
       "ingredientLabel": "Ingrediente / Stock item",
       "selectIngredient": "— Seleccioná —",
+      "groupInStock": "En stock",
+      "groupCatalog": "Otros ingredientes",
       "grossQty": "Cantidad bruta (g)",
       "yieldPct": "Rendimiento %",
       "price": "Precio ({currency})",
@@ -241,7 +243,9 @@
       "addItem": "+ Agregar ítem",
       "total": "Total: {currency} {amount} · {n} ítems",
       "submit": "Registrar compra",
-      "submitting": "Guardando…"
+      "submitting": "Guardando…",
+      "errorNoItems": "Agregá al menos un ítem con cantidad y precio",
+      "errorSave": "No se pudo guardar la compra"
     },
     "prepTasks": {
       "title": "Pre-producción",

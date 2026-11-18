@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
-import type { CreatePurchasePayload } from '@/types/stock'
+import type { CreatePurchaseInput } from '@/types/stock'
 
 export async function POST(req: Request) {
   try {
@@ -8,7 +9,7 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const payload: CreatePurchasePayload = await req.json()
+    const payload: CreatePurchaseInput = await req.json()
 
     // Crear cabecera de compra
     const { data: purchase, error: purchaseErr } = await supabase
@@ -28,15 +29,45 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: purchaseErr?.message ?? 'Error creando compra' }, { status: 500 })
     }
 
-    // Crear ítems (el trigger fn_purchase_item_to_movement se encarga del stock)
-    const itemRows = payload.items.map(item => ({
-      purchase_id:    purchase.id,
-      stock_item_id:  item.stock_item_id,
-      quantity_gross: item.quantity_gross,
-      yield_pct_snap: item.yield_pct_snap ?? 100,
-      price_paid:     item.price_paid,
-    }))
+    // Resolver líneas: si vienen con ingredient_id, buscar o crear el stock_item
+    const itemRows: {
+      purchase_id:    string
+      stock_item_id:  string
+      quantity_gross: number
+      yield_pct_snap: number
+      price_paid:     number
+    }[] = []
 
+    for (const item of payload.items) {
+      if (!(item.quantity_gross > 0)) {
+        await supabase.from('purchases').delete().eq('id', purchase.id)
+        return NextResponse.json(
+          { error: 'Cada ítem necesita una cantidad mayor a 0' },
+          { status: 400 }
+        )
+      }
+
+      const stockItemId = item.stock_item_id
+        ?? await resolveStockItemId(supabase, user.id, item.ingredient_id, item.yield_pct_snap)
+
+      if (!stockItemId) {
+        await supabase.from('purchases').delete().eq('id', purchase.id)
+        return NextResponse.json(
+          { error: 'Ítem sin ingrediente válido' },
+          { status: 400 }
+        )
+      }
+
+      itemRows.push({
+        purchase_id:    purchase.id,
+        stock_item_id:  stockItemId,
+        quantity_gross: item.quantity_gross,
+        yield_pct_snap: item.yield_pct_snap ?? 100,
+        price_paid:     item.price_paid,
+      })
+    }
+
+    // Insertar líneas (el trigger fn_purchase_item_to_movement se encarga del stock)
     const { error: itemsErr } = await supabase
       .from('purchase_items')
       .insert(itemRows)
@@ -77,4 +108,54 @@ export async function GET(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
+}
+
+/** Devuelve el stock_item del usuario para un ingrediente, creándolo si no existe. */
+async function resolveStockItemId(
+  supabase: SupabaseClient,
+  userId: string,
+  ingredientId?: string,
+  yieldPct?: number
+): Promise<string | null> {
+  if (!ingredientId) return null
+
+  const { data: existing } = await supabase
+    .from('stock_items')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('ingredient_id', ingredientId)
+    .maybeSingle()
+
+  if (existing?.id) return existing.id as string
+
+  const { data: ingredient } = await supabase
+    .from('ingredients')
+    .select('id, name_en')
+    .eq('id', ingredientId)
+    .maybeSingle()
+
+  if (!ingredient) return null
+
+  const validYield = yieldPct && yieldPct > 0 && yieldPct <= 100 ? yieldPct : 100
+
+  const { data: created, error } = await supabase
+    .from('stock_items')
+    .insert({
+      user_id:       userId,
+      kind:          'ingredient',
+      ingredient_id: ingredientId,
+      name:          ingredient.name_en,
+      unit:          'g',
+      yield_pct:     validYield,
+      storage_type:  'pantry',
+    })
+    .select('id')
+    .single()
+
+  if (error || !created) {
+    console.error('resolveStockItemId:', error?.message)
+    return null
+  }
+
+  return created.id as string
 }

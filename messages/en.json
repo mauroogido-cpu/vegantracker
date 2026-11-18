@@ -234,6 +234,8 @@
       "removeItem": "✕ Remove",
       "ingredientLabel": "Ingredient / Stock item",
       "selectIngredient": "— Select —",
+      "groupInStock": "In stock",
+      "groupCatalog": "Other ingredients",
       "grossQty": "Gross quantity (g)",
       "yieldPct": "Yield %",
       "price": "Price ({currency})",
@@ -241,7 +243,9 @@
       "addItem": "+ Add item",
       "total": "Total: {currency} {amount} · {n} items",
       "submit": "Record purchase",
-      "submitting": "Saving…"
+      "submitting": "Saving…",
+      "errorNoItems": "Add at least one item with quantity and price",
+      "errorSave": "Could not save the purchase"
     },
     "prepTasks": {
       "title": "Pre-production",
