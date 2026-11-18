@@ -5,6 +5,17 @@ import type { Supplier } from '@/types/stock'
 
 const DAYS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
 
+// Supabase puede devolver arrays de texto como string "{Lun,Mar}" — normalizamos
+function toDays(v: unknown): string[] {
+  if (!v) return []
+  if (Array.isArray(v)) return v as string[]
+  if (typeof v === 'string') {
+    // formato Postgres: {Lun,Mar,Mié}
+    return v.replace(/^{|}$/g, '').split(',').filter(Boolean)
+  }
+  return []
+}
+
 interface Props {
   suppliers: Supplier[]
   locale: string
@@ -42,7 +53,7 @@ export default function SupplierList({ suppliers: initial, locale }: Props) {
     setForm({
       name:       s.name,
       location:   s.location ?? '',
-      visit_days: s.visit_days ?? [],
+      visit_days: toDays(s.visit_days),
       notes:      s.notes ?? '',
     })
     setError('')
@@ -219,8 +230,8 @@ export default function SupplierList({ suppliers: initial, locale }: Props) {
                 <p className="font-medium text-gray-900">{s.name}</p>
                 <div className="flex gap-3 mt-0.5 text-xs text-gray-500">
                   {s.location && <span>📍 {s.location}</span>}
-                  {s.visit_days && s.visit_days.length > 0 && (
-                    <span>📅 {s.visit_days.join(', ')}</span>
+                  {toDays(s.visit_days).length > 0 && (
+                    <span>📅 {toDays(s.visit_days).join(', ')}</span>
                   )}
                   {s.notes && <span>💬 {s.notes}</span>}
                 </div>
