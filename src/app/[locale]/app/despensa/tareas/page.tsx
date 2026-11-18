@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import Link from 'next/link'
@@ -18,7 +18,7 @@ const TYPE_ICONS: Record<string, string> = {
 }
 
 export default async function TareasPage() {
-  const supabase = await createServerSupabaseClient()
+  const supabase = await createClient()
   const locale   = await getLocale()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -61,9 +61,10 @@ export default async function TareasPage() {
       {/* sub-nav */}
       <div className="flex gap-1 border-b border-gray-200">
         {[
-          { href: `/${locale}/app/despensa`,         label: 'Stock' },
-          { href: `/${locale}/app/despensa/compras`,  label: 'Compras' },
-          { href: `/${locale}/app/despensa/tareas`,   label: 'Pre-producción' },
+          { href: `/${locale}/app/despensa`,              label: 'Stock'          },
+          { href: `/${locale}/app/despensa/compras`,       label: 'Compras'        },
+          { href: `/${locale}/app/despensa/tareas`,        label: 'Pre-producción' },
+          { href: `/${locale}/app/despensa/proveedores`,   label: 'Proveedores'    },
         ].map(({ href, label }) => (
           <Link key={href} href={href}
             className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-green-500 -mb-px">

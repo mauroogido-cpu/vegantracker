@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import Link from 'next/link'
@@ -7,7 +7,7 @@ import StockList from '@/components/stock/StockList'
 import type { StockItemWithIngredient, StockSummary } from '@/types/stock'
 
 export default async function DespensaPage() {
-  const supabase = await createServerSupabaseClient()
+  const supabase = await createClient()
   const locale   = await getLocale()
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -95,9 +95,10 @@ export default async function DespensaPage() {
       {/* Sub-nav */}
       <div className="flex gap-1 border-b border-gray-200">
         {[
-          { href: `/${locale}/app/despensa`,         label: 'Stock' },
-          { href: `/${locale}/app/despensa/compras`,  label: 'Compras' },
-          { href: `/${locale}/app/despensa/tareas`,   label: 'Pre-producción' },
+          { href: `/${locale}/app/despensa`,              label: 'Stock'          },
+          { href: `/${locale}/app/despensa/compras`,       label: 'Compras'        },
+          { href: `/${locale}/app/despensa/tareas`,        label: 'Pre-producción' },
+          { href: `/${locale}/app/despensa/proveedores`,   label: 'Proveedores'    },
         ].map(({ href, label }) => (
           <Link
             key={href}

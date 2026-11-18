@@ -1,11 +1,11 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import NuevaTareaForm from '@/components/stock/NuevaTareaForm'
 import type { StockItemWithIngredient } from '@/types/stock'
 
 export default async function NuevaTareaPage() {
-  const supabase = await createServerSupabaseClient()
+  const supabase = await createClient()
   const locale   = await getLocale()
 
   const { data: { user } } = await supabase.auth.getUser()

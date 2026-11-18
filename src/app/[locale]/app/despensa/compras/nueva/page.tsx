@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getLocale } from 'next-intl/server'
 import NuevaCompraForm from '@/components/stock/NuevaCompraForm'
@@ -6,7 +6,7 @@ import type { StockItemWithIngredient } from '@/types/stock'
 import type { Supplier } from '@/types/stock'
 
 export default async function NuevaCompraPage() {
-  const supabase = await createServerSupabaseClient()
+  const supabase = await createClient()
   const locale   = await getLocale()
 
   const { data: { user } } = await supabase.auth.getUser()
