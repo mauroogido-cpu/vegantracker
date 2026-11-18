@@ -159,5 +159,150 @@
     "loading": "Cargando...",
     "error": "Algo salió mal",
     "empty": "Nada por aquí todavía"
+  },
+  "stock": {
+    "title": "Despensa",
+    "subtitle": "Gestión de stock, compras y pre-producción",
+    "newPurchase": "+ Nueva compra",
+    "newTask": "+ Nueva tarea",
+    "tabs": {
+      "stock": "Stock",
+      "purchases": "Compras",
+      "prepTasks": "Pre-producción",
+      "suppliers": "Proveedores"
+    },
+    "summary": {
+      "stockValue": "Valor en stock",
+      "itemsInStock": "Items en stock",
+      "lowStock": "Bajo mínimo",
+      "pendingTasks": "Tareas pendientes",
+      "purchases7d": "Compras (7 días)",
+      "consumed7d": "Consumo (7 días)"
+    },
+    "stockList": {
+      "search": "Buscar...",
+      "allTypes": "Todo tipo",
+      "allStorage": "Todo almacén",
+      "showEmpty": "Mostrar agotados",
+      "ofItems": "de {total} items",
+      "emptyTitle": "Sin items en stock todavía",
+      "emptySubtitle": "Registrá tu primera compra para empezar a gestionar la despensa",
+      "cols": {
+        "name": "Nombre",
+        "type": "Tipo",
+        "storage": "Almacén",
+        "balance": "Saldo (g)",
+        "wac": "WAC /100g",
+        "value": "Valor",
+        "status": "Estado"
+      },
+      "noResults": "Sin resultados para los filtros actuales",
+      "yield": "Rendimiento: {pct}%",
+      "status": {
+        "ok": "OK",
+        "low": "⚠️ Bajo",
+        "out": "Agotado"
+      },
+      "kinds": {
+        "ingredient": "Ingrediente",
+        "prep": "Prep",
+        "product": "Producto"
+      },
+      "storage": {
+        "pantry": "Despensa",
+        "fridge": "Nevera",
+        "freezer": "Congelador"
+      }
+    },
+    "purchases": {
+      "title": "Compras",
+      "subtitle": "Historial de compras registradas",
+      "emptyTitle": "Sin compras registradas todavía",
+      "emptyAction": "Registrar primera compra",
+      "items": "{n} ítems",
+      "newTitle": "Nueva compra",
+      "newSubtitle": "Registrá una compra para actualizar el stock y el costo promedio ponderado",
+      "date": "Fecha",
+      "currency": "Moneda",
+      "supplier": "Proveedor (opcional)",
+      "noSupplier": "— Sin proveedor —",
+      "notes": "Notas (opcional)",
+      "notesPlaceholder": "Feria orgánica, super, etc.",
+      "purchaseData": "Datos de la compra",
+      "itemsSection": "Ítems comprados",
+      "itemN": "Ítem #{n}",
+      "removeItem": "✕ Quitar",
+      "ingredientLabel": "Ingrediente / Stock item",
+      "selectIngredient": "— Seleccioná —",
+      "grossQty": "Cantidad bruta (g)",
+      "yieldPct": "Rendimiento %",
+      "price": "Precio ({currency})",
+      "netCalc": "→ {net}g neto · {currency} {price}/100g",
+      "addItem": "+ Agregar ítem",
+      "total": "Total: {currency} {amount} · {n} ítems",
+      "submit": "Registrar compra",
+      "submitting": "Guardando…"
+    },
+    "prepTasks": {
+      "title": "Pre-producción",
+      "subtitle": "Tareas de preparación, transformación y cocción",
+      "emptyTitle": "Sin tareas de pre-producción todavía",
+      "emptyAction": "Crear primera tarea",
+      "complete": "Completar →",
+      "inputs": "Insumos",
+      "outputs": "Productos esperados",
+      "expected": "esperado: {n}",
+      "types": {
+        "prep": "Preparación (corte/lavado)",
+        "transform": "Transformación (tofu, leche)",
+        "cook": "Cocción / batch cook"
+      },
+      "status": {
+        "pending": "Pendiente",
+        "in_progress": "En curso",
+        "done": "Completada",
+        "cancelled": "Cancelada"
+      },
+      "newTitle": "Nueva tarea de pre-producción",
+      "newSubtitle": "Preparación, transformación o cocción que mueve stock",
+      "name": "Nombre",
+      "namePlaceholder": "Ej: Tofu casero, Apio pre-cortado, Batch lentejas",
+      "taskType": "Tipo",
+      "scheduledFor": "Fecha programada (opc.)",
+      "notes": "Notas (opcional)",
+      "notesPlaceholder": "Instrucciones, referencias de receta, etc.",
+      "inputsLabel": "📥 Insumos (inputs — se descuentan del stock al completar)",
+      "outputsLabel": "📤 Productos esperados (outputs — se suman al stock al completar)",
+      "selectItem": "— Seleccioná stock item —",
+      "quantity": "Cantidad",
+      "unit": "Unidad",
+      "addLine": "+ Agregar",
+      "createTask": "Crear tarea",
+      "submitting": "Guardando…"
+    },
+    "suppliers": {
+      "title": "Proveedores",
+      "subtitle": "Ferias, almacenes y comercios donde comprás",
+      "newButton": "+ Nuevo proveedor",
+      "emptyTitle": "Sin proveedores todavía",
+      "emptySubtitle": "Agregá ferias, almacenes o tiendas para vincularlos a tus compras",
+      "emptyAction": "+ Nuevo proveedor",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "confirmDelete": "¿Eliminar este proveedor?",
+      "formNew": "🏪 Nuevo proveedor",
+      "formEdit": "✏️ Editar proveedor",
+      "name": "Nombre",
+      "namePlaceholder": "Ej: Feria de Surquillo, Orgánica Market",
+      "location": "Ubicación",
+      "locationPlaceholder": "Ej: Surquillo, Lima",
+      "visitDays": "Días de visita",
+      "notes": "Notas",
+      "notesPlaceholder": "Horario, productos especiales, contacto...",
+      "cancel": "Cancelar",
+      "saveNew": "Crear proveedor",
+      "saveEdit": "Guardar cambios",
+      "submitting": "Guardando…"
+    }
   }
 }

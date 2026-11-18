@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getLocale } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import type { PurchaseWithItems } from '@/types/stock'
 
 export default async function ComprasPage() {
   const supabase = await createClient()
   const locale   = await getLocale()
+  const t        = await getTranslations('stock')
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/login`)
@@ -30,29 +31,31 @@ export default async function ComprasPage() {
   const fmt = (n: number, currency: string = 'PEN') =>
     new Intl.NumberFormat('es-PE', { style: 'currency', currency }).format(n)
 
+  const tabs = [
+    { href: `/${locale}/app/despensa`,            label: t('tabs.stock')      },
+    { href: `/${locale}/app/despensa/compras`,     label: t('tabs.purchases')  },
+    { href: `/${locale}/app/despensa/tareas`,      label: t('tabs.prepTasks')  },
+    { href: `/${locale}/app/despensa/proveedores`, label: t('tabs.suppliers')  },
+  ]
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">🛒 Compras</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Historial de compras registradas</p>
+          <h1 className="text-2xl font-bold text-gray-900">🛒 {t('purchases.title')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t('purchases.subtitle')}</p>
         </div>
         <Link
           href={`/${locale}/app/despensa/compras/nueva`}
           className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
         >
-          + Nueva compra
+          + {t('newPurchase')}
         </Link>
       </div>
 
       {/* sub-nav */}
       <div className="flex gap-1 border-b border-gray-200">
-        {[
-          { href: `/${locale}/app/despensa`,              label: 'Stock'          },
-          { href: `/${locale}/app/despensa/compras`,       label: 'Compras'        },
-          { href: `/${locale}/app/despensa/tareas`,        label: 'Pre-producción' },
-          { href: `/${locale}/app/despensa/proveedores`,   label: 'Proveedores'    },
-        ].map(({ href, label }) => (
+        {tabs.map(({ href, label }) => (
           <Link key={href} href={href}
             className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-green-500 -mb-px">
             {label}
@@ -63,10 +66,10 @@ export default async function ComprasPage() {
       {purchases.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-gray-200 p-12 text-center">
           <p className="text-4xl mb-3">🛒</p>
-          <p className="text-gray-500 font-medium">Sin compras registradas todavía</p>
+          <p className="text-gray-500 font-medium">{t('purchases.emptyTitle')}</p>
           <Link href={`/${locale}/app/despensa/compras/nueva`}
             className="mt-4 inline-block rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-            Registrar primera compra
+            {t('purchases.emptyAction')}
           </Link>
         </div>
       ) : (
@@ -89,7 +92,7 @@ export default async function ComprasPage() {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-green-700">{fmt(total, p.currency ?? 'PEN')}</p>
-                    <p className="text-xs text-gray-400">{lineCount} ítems</p>
+                    <p className="text-xs text-gray-400">{t('purchases.items', { n: lineCount })}</p>
                   </div>
                 </div>
                 {p.items && p.items.length > 0 && (

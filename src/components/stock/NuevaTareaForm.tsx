@@ -1,233 +1,246 @@
 'use client'
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import type { StockItemWithIngredient, PrepTaskType, CreatePrepTaskPayload } from '@/types/stock'
+import { useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { createClient } from '@/lib/supabase/client'
+import type { StockItem, PrepTaskType } from '@/types/stock'
 
 interface IOLine {
   stock_item_id: string
-  quantity: number
+  qty_g: number
   unit: string
 }
 
-const TASK_TYPES: { value: PrepTaskType; label: string; icon: string }[] = [
-  { value: 'prep',      label: 'Preparación (corte/lavado)', icon: '🔪' },
-  { value: 'transform', label: 'Transformación (tofu, leche)',  icon: '🔄' },
-  { value: 'cook',      label: 'Cocción / batch cook',           icon: '🍳' },
-]
-
 interface Props {
-  stockItems: StockItemWithIngredient[]
-  locale: string
+  stockItems: StockItem[]
+  onSuccess?: () => void
 }
 
-export default function NuevaTareaForm({ stockItems, locale }: Props) {
-  const router = useRouter()
-  const [pending, startTransition] = useTransition()
+const TASK_TYPES: { value: PrepTaskType; icon: string }[] = [
+  { value: 'cook',     icon: '🍳' },
+  { value: 'blend',   icon: '🥤' },
+  { value: 'ferment', icon: '🫙' },
+  { value: 'dehy',    icon: '☀️' },
+  { value: 'sprout',  icon: '🌱' },
+  { value: 'other',   icon: '🔧' },
+]
 
-  const [name, setName]               = useState('')
-  const [taskType, setTaskType]       = useState<PrepTaskType>('prep')
+function IOBlock({
+  label,
+  lines,
+  onChange,
+  stockItems,
+}: {
+  label: string
+  lines: IOLine[]
+  onChange: (lines: IOLine[]) => void
+  stockItems: StockItem[]
+}) {
+  const t = useTranslations('stock.prepTasks')
+
+  const addLine = () =>
+    onChange([...lines, { stock_item_id: '', qty_g: 0, unit: 'g' }])
+
+  const updateLine = (i: number, patch: Partial<IOLine>) =>
+    onChange(lines.map((l, idx) => (idx === i ? { ...l, ...patch } : l)))
+
+  const removeLine = (i: number) => onChange(lines.filter((_, idx) => idx !== i))
+
+  return (
+    <div className="space-y-2">
+      <h4 className="text-sm font-medium text-gray-700">{label}</h4>
+      {lines.map((line, i) => (
+        <div key={i} className="flex gap-2 items-center">
+          <select
+            value={line.stock_item_id}
+            onChange={(e) => updateLine(i, { stock_item_id: e.target.value })}
+            className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none"
+          >
+            <option value="">{t('selectItem')}</option>
+            {stockItems.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min={0}
+            step={0.1}
+            value={line.qty_g || ''}
+            onChange={(e) => updateLine(i, { qty_g: parseFloat(e.target.value) || 0 })}
+            placeholder={t('quantity')}
+            className="w-24 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none"
+          />
+          <input
+            type="text"
+            value={line.unit}
+            onChange={(e) => updateLine(i, { unit: e.target.value })}
+            placeholder={t('unit')}
+            className="w-16 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => removeLine(i)}
+            className="text-red-400 hover:text-red-600 text-sm"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addLine}
+        className="text-xs text-green-600 hover:text-green-800 font-medium"
+      >
+        + {t('addLine')}
+      </button>
+    </div>
+  )
+}
+
+export default function NuevaTareaForm({ stockItems, onSuccess }: Props) {
+  const t = useTranslations('stock.prepTasks')
+  const supabase = createClient()
+
+  const [name, setName] = useState('')
+  const [taskType, setTaskType] = useState<PrepTaskType>('cook')
   const [scheduledFor, setScheduledFor] = useState('')
-  const [notes, setNotes]             = useState('')
-  const [inputs, setInputs]           = useState<IOLine[]>([
-    { stock_item_id: '', quantity: 0, unit: 'g' }
-  ])
-  const [outputs, setOutputs]         = useState<IOLine[]>([
-    { stock_item_id: '', quantity: 0, unit: 'g' }
-  ])
-  const [error, setError]             = useState('')
-
-  function addInput()  { setInputs(l => [...l, { stock_item_id: '', quantity: 0, unit: 'g' }]) }
-  function addOutput() { setOutputs(l => [...l, { stock_item_id: '', quantity: 0, unit: 'g' }]) }
-
-  function updateInput(i: number, f: keyof IOLine, v: string | number)  {
-    setInputs(l => l.map((x, idx) => idx === i ? { ...x, [f]: v } : x))
-  }
-  function updateOutput(i: number, f: keyof IOLine, v: string | number) {
-    setOutputs(l => l.map((x, idx) => idx === i ? { ...x, [f]: v } : x))
-  }
+  const [notes, setNotes] = useState('')
+  const [inputs, setInputs] = useState<IOLine[]>([{ stock_item_id: '', qty_g: 0, unit: 'g' }])
+  const [outputs, setOutputs] = useState<IOLine[]>([{ stock_item_id: '', qty_g: 0, unit: 'g' }])
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
-
-    const validInputs  = inputs.filter(l => l.stock_item_id && l.quantity > 0)
-    const validOutputs = outputs.filter(l => l.stock_item_id && l.quantity > 0)
-
-    if (!name.trim()) { setError('El nombre de la tarea es requerido'); return }
-    if (validInputs.length === 0)  { setError('Agregá al menos un insumo'); return }
-    if (validOutputs.length === 0) { setError('Agregá al menos un producto esperado'); return }
-
-    const payload: CreatePrepTaskPayload = {
-      name:          name.trim(),
-      task_type:     taskType,
-      scheduled_for: scheduledFor || undefined,
-      notes:         notes || undefined,
-      inputs:  validInputs.map(l => ({ stock_item_id: l.stock_item_id, quantity: l.quantity, unit: l.unit })),
-      outputs: validOutputs.map(l => ({ stock_item_id: l.stock_item_id, quantity_expected: l.quantity, unit: l.unit })),
-    }
-
-    startTransition(async () => {
-      try {
-        const res = await fetch('/api/stock/prep-tasks', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify(payload),
+    setSubmitting(true)
+    setError(null)
+    try {
+      const { data: task, error: te } = await supabase
+        .from('prep_tasks')
+        .insert({
+          name,
+          task_type: taskType,
+          scheduled_for: scheduledFor || null,
+          notes: notes || null,
+          status: 'pending',
         })
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}))
-          setError(body.error ?? 'Error al guardar la tarea')
-          return
-        }
-        router.push(`/${locale}/app/despensa/tareas`)
-        router.refresh()
-      } catch {
-        setError('Error de red. Intentá de nuevo.')
-      }
-    })
-  }
+        .select('id')
+        .single()
+      if (te || !task) throw te ?? new Error('No task returned')
 
-  function IOBlock({
-    title, lines, onAdd, onUpdate, onRemove,
-  }: {
-    title: string
-    lines: IOLine[]
-    onAdd: () => void
-    onUpdate: (i: number, f: keyof IOLine, v: string | number) => void
-    onRemove: (i: number) => void
-  }) {
-    return (
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
-        <h2 className="font-semibold text-gray-700">{title}</h2>
-        {lines.map((line, i) => (
-          <div key={i} className="rounded-md border border-gray-100 bg-gray-50 p-3 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-gray-500">#{i + 1}</span>
-              {lines.length > 1 && (
-                <button type="button" onClick={() => onRemove(i)}
-                  className="text-xs text-red-400 hover:text-red-600">✕</button>
-              )}
-            </div>
-            <select
-              value={line.stock_item_id}
-              onChange={e => onUpdate(i, 'stock_item_id', e.target.value)}
-              className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none"
-              required
-            >
-              <option value="">— Seleccioná stock item —</option>
-              {stockItems.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-gray-600">Cantidad</label>
-                <input type="number" min={0} step={0.1}
-                  value={line.quantity || ''}
-                  onChange={e => onUpdate(i, 'quantity', parseFloat(e.target.value) || 0)}
-                  className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none"
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-600">Unidad</label>
-                <select value={line.unit}
-                  onChange={e => onUpdate(i, 'unit', e.target.value)}
-                  className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none">
-                  <option value="g">g</option>
-                  <option value="ml">ml</option>
-                  <option value="unit">unidad</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        ))}
-        <button type="button" onClick={onAdd}
-          className="text-sm text-green-600 hover:text-green-800 font-medium">
-          + Agregar
-        </button>
-      </div>
-    )
+      const inputRows = inputs
+        .filter((l) => l.stock_item_id && l.qty_g > 0)
+        .map((l) => ({ prep_task_id: task.id, stock_item_id: l.stock_item_id, qty_g: l.qty_g, unit: l.unit, io_type: 'input' }))
+
+      const outputRows = outputs
+        .filter((l) => l.stock_item_id && l.qty_g > 0)
+        .map((l) => ({ prep_task_id: task.id, stock_item_id: l.stock_item_id, qty_g: l.qty_g, unit: l.unit, io_type: 'output' }))
+
+      const allRows = [...inputRows, ...outputRows]
+      if (allRows.length) {
+        const { error: le } = await supabase.from('prep_task_lines').insert(allRows)
+        if (le) throw le
+      }
+
+      onSuccess?.()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Error')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-white rounded-xl shadow-sm border border-gray-200">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">🔪 Nueva tarea de pre-producción</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Preparación, transformación o cocción que mueve stock
-        </p>
-      </div>
-
-      {/* Datos base */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-          <input type="text" value={name} onChange={e => setName(e.target.value)}
-            placeholder="Ej: Tofu casero, Apio pre-cortado, Batch lentejas"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-            required
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-            <div className="space-y-1">
-              {TASK_TYPES.map(t => (
-                <label key={t.value} className="flex items-center gap-2 cursor-pointer text-sm">
-                  <input type="radio" name="taskType" value={t.value}
-                    checked={taskType === t.value}
-                    onChange={() => setTaskType(t.value)}
-                    className="text-green-600"
-                  />
-                  {t.icon} {t.label}
-                </label>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha programada (opc.)</label>
-            <input type="date" value={scheduledFor} onChange={e => setScheduledFor(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Notas (opcional)</label>
-          <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
-            placeholder="Instrucciones, referencias de receta, etc."
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none"
-          />
-        </div>
-      </div>
-
-      <IOBlock
-        title="📥 Insumos (inputs — se descuentan del stock al completar)"
-        lines={inputs}
-        onAdd={addInput}
-        onUpdate={updateInput}
-        onRemove={i => setInputs(l => l.filter((_, idx) => idx !== i))}
-      />
-
-      <IOBlock
-        title="📤 Productos esperados (outputs — se suman al stock al completar)"
-        lines={outputs}
-        onAdd={addOutput}
-        onUpdate={updateOutput}
-        onRemove={i => setOutputs(l => l.filter((_, idx) => idx !== i))}
-      />
-
-      <div className="flex justify-end">
-        <button type="submit" disabled={pending}
-          className="rounded-lg bg-green-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50">
-          {pending ? 'Guardando…' : 'Crear tarea'}
-        </button>
+        <h2 className="text-lg font-semibold text-gray-900">{t('newTitle')}</h2>
+        <p className="text-sm text-gray-500">{t('newSubtitle')}</p>
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 border border-red-200">{error}</p>
+        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          {error}
+        </div>
       )}
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('name')}</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            placeholder={t('namePlaceholder')}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t('taskType')}</label>
+          <div className="flex flex-wrap gap-2">
+            {TASK_TYPES.map((tt) => (
+              <button
+                key={tt.value}
+                type="button"
+                onClick={() => setTaskType(tt.value)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm border transition-colors ${
+                  taskType === tt.value
+                    ? 'bg-green-600 text-white border-green-600'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-green-400'
+                }`}
+              >
+                <span>{tt.icon}</span>
+                <span>{t(`types.${tt.value}` as any)}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('scheduledFor')}</label>
+          <input
+            type="datetime-local"
+            value={scheduledFor}
+            onChange={(e) => setScheduledFor(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('notes')}</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            placeholder={t('notesPlaceholder')}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+        </div>
+
+        <IOBlock
+          label={t('inputsLabel')}
+          lines={inputs}
+          onChange={setInputs}
+          stockItems={stockItems}
+        />
+
+        <IOBlock
+          label={t('outputsLabel')}
+          lines={outputs}
+          onChange={setOutputs}
+          stockItems={stockItems}
+        />
+      </div>
+
+      <div className="flex justify-end pt-4 border-t border-gray-200">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
+        >
+          {submitting ? t('submitting') : t('createTask')}
+        </button>
+      </div>
     </form>
   )
 }

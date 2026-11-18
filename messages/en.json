@@ -159,5 +159,150 @@
     "loading": "Loading...",
     "error": "Something went wrong",
     "empty": "Nothing here yet"
+  },
+  "stock": {
+    "title": "Pantry",
+    "subtitle": "Stock, purchases and pre-production management",
+    "newPurchase": "+ New purchase",
+    "newTask": "+ New task",
+    "tabs": {
+      "stock": "Stock",
+      "purchases": "Purchases",
+      "prepTasks": "Pre-production",
+      "suppliers": "Suppliers"
+    },
+    "summary": {
+      "stockValue": "Stock value",
+      "itemsInStock": "Items in stock",
+      "lowStock": "Low stock",
+      "pendingTasks": "Pending tasks",
+      "purchases7d": "Purchases (7 days)",
+      "consumed7d": "Consumed (7 days)"
+    },
+    "stockList": {
+      "search": "Search...",
+      "allTypes": "All types",
+      "allStorage": "All storage",
+      "showEmpty": "Show depleted",
+      "ofItems": "of {total} items",
+      "emptyTitle": "No stock items yet",
+      "emptySubtitle": "Record your first purchase to start managing your pantry",
+      "cols": {
+        "name": "Name",
+        "type": "Type",
+        "storage": "Storage",
+        "balance": "Balance (g)",
+        "wac": "WAC /100g",
+        "value": "Value",
+        "status": "Status"
+      },
+      "noResults": "No results for current filters",
+      "yield": "Yield: {pct}%",
+      "status": {
+        "ok": "OK",
+        "low": "⚠️ Low",
+        "out": "Depleted"
+      },
+      "kinds": {
+        "ingredient": "Ingredient",
+        "prep": "Prep",
+        "product": "Product"
+      },
+      "storage": {
+        "pantry": "Pantry",
+        "fridge": "Fridge",
+        "freezer": "Freezer"
+      }
+    },
+    "purchases": {
+      "title": "Purchases",
+      "subtitle": "Purchase history",
+      "emptyTitle": "No purchases recorded yet",
+      "emptyAction": "Record first purchase",
+      "items": "{n} items",
+      "newTitle": "New purchase",
+      "newSubtitle": "Record a purchase to update stock and weighted average cost",
+      "date": "Date",
+      "currency": "Currency",
+      "supplier": "Supplier (optional)",
+      "noSupplier": "— No supplier —",
+      "notes": "Notes (optional)",
+      "notesPlaceholder": "Organic market, supermarket, etc.",
+      "purchaseData": "Purchase details",
+      "itemsSection": "Purchased items",
+      "itemN": "Item #{n}",
+      "removeItem": "✕ Remove",
+      "ingredientLabel": "Ingredient / Stock item",
+      "selectIngredient": "— Select —",
+      "grossQty": "Gross quantity (g)",
+      "yieldPct": "Yield %",
+      "price": "Price ({currency})",
+      "netCalc": "→ {net}g net · {currency} {price}/100g",
+      "addItem": "+ Add item",
+      "total": "Total: {currency} {amount} · {n} items",
+      "submit": "Record purchase",
+      "submitting": "Saving…"
+    },
+    "prepTasks": {
+      "title": "Pre-production",
+      "subtitle": "Prep, transformation and cooking tasks",
+      "emptyTitle": "No pre-production tasks yet",
+      "emptyAction": "Create first task",
+      "complete": "Complete →",
+      "inputs": "Inputs",
+      "outputs": "Expected outputs",
+      "expected": "expected: {n}",
+      "types": {
+        "prep": "Prep (cutting/washing)",
+        "transform": "Transform (tofu, milk)",
+        "cook": "Batch cooking"
+      },
+      "status": {
+        "pending": "Pending",
+        "in_progress": "In progress",
+        "done": "Done",
+        "cancelled": "Cancelled"
+      },
+      "newTitle": "New pre-production task",
+      "newSubtitle": "Prep, transformation or cooking that moves stock",
+      "name": "Name",
+      "namePlaceholder": "e.g. Homemade tofu, Pre-cut celery, Lentil batch",
+      "taskType": "Type",
+      "scheduledFor": "Scheduled date (opt.)",
+      "notes": "Notes (optional)",
+      "notesPlaceholder": "Instructions, recipe reference, etc.",
+      "inputsLabel": "📥 Inputs (deducted from stock on completion)",
+      "outputsLabel": "📤 Expected outputs (added to stock on completion)",
+      "selectItem": "— Select stock item —",
+      "quantity": "Quantity",
+      "unit": "Unit",
+      "addLine": "+ Add",
+      "createTask": "Create task",
+      "submitting": "Saving…"
+    },
+    "suppliers": {
+      "title": "Suppliers",
+      "subtitle": "Markets, stores and shops where you buy",
+      "newButton": "+ New supplier",
+      "emptyTitle": "No suppliers yet",
+      "emptySubtitle": "Add markets or stores to link them to your purchases",
+      "emptyAction": "+ New supplier",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Delete this supplier?",
+      "formNew": "🏪 New supplier",
+      "formEdit": "✏️ Edit supplier",
+      "name": "Name",
+      "namePlaceholder": "e.g. Surquillo Market, Organic Store",
+      "location": "Location",
+      "locationPlaceholder": "e.g. Surquillo, Lima",
+      "visitDays": "Visit days",
+      "notes": "Notes",
+      "notesPlaceholder": "Hours, special products, contact...",
+      "cancel": "Cancel",
+      "saveNew": "Create supplier",
+      "saveEdit": "Save changes",
+      "submitting": "Saving…"
+    }
   }
 }

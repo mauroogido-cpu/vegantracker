@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { getLocale } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import StockSummaryBar from '@/components/stock/StockSummaryBar'
 import StockList from '@/components/stock/StockList'
@@ -9,6 +9,7 @@ import type { StockItemWithIngredient, StockSummary } from '@/types/stock'
 export default async function DespensaPage() {
   const supabase = await createClient()
   const locale   = await getLocale()
+  const t        = await getTranslations('stock')
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect(`/${locale}/login`)
@@ -63,28 +64,33 @@ export default async function DespensaPage() {
     consumed_7d_cost:  consumed7Cost,
   }
 
+  const tabs = [
+    { href: `/${locale}/app/despensa`,            label: t('tabs.stock')      },
+    { href: `/${locale}/app/despensa/compras`,     label: t('tabs.purchases')  },
+    { href: `/${locale}/app/despensa/tareas`,      label: t('tabs.prepTasks')  },
+    { href: `/${locale}/app/despensa/proveedores`, label: t('tabs.suppliers')  },
+  ]
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">📦 Despensa</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Gestión de stock, compras y pre-producción
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">📦 {t('title')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t('subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Link
             href={`/${locale}/app/despensa/compras/nueva`}
             className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
           >
-            + Nueva compra
+            + {t('newPurchase')}
           </Link>
           <Link
             href={`/${locale}/app/despensa/tareas/nueva`}
             className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
-            + Nueva tarea
+            + {t('newTask')}
           </Link>
         </div>
       </div>
@@ -94,12 +100,7 @@ export default async function DespensaPage() {
 
       {/* Sub-nav */}
       <div className="flex gap-1 border-b border-gray-200">
-        {[
-          { href: `/${locale}/app/despensa`,              label: 'Stock'          },
-          { href: `/${locale}/app/despensa/compras`,       label: 'Compras'        },
-          { href: `/${locale}/app/despensa/tareas`,        label: 'Pre-producción' },
-          { href: `/${locale}/app/despensa/proveedores`,   label: 'Proveedores'    },
-        ].map(({ href, label }) => (
+        {tabs.map(({ href, label }) => (
           <Link
             key={href}
             href={href}
