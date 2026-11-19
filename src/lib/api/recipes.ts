@@ -55,7 +55,7 @@ export async function getRecipeWithIngredients(
         id, name_en, category, cal, protein_g, carbs_g, fat_g, fiber_g,
         iron_mg, calcium_mg, zinc_mg, vit_b12_mcg, vit_d_mcg, vit_c_mg, omega3_g,
         potassium_mg, sodium_mg, selenium_mcg, vit_a_rae_mcg, folate_mcg,
-        magnesium_mg, vit_k_mcg, vit_e_mg, vit_b6_mg, choline_mg,
+        magnesium_mg, vit_k_mcg, vit_e_mg, vit_b6_mg, choline_mg, saturated_fat_g,
         ingredient_translations!inner ( name )
       )
     `)

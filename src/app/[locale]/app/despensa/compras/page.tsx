@@ -90,9 +90,17 @@ export default async function ComprasPage() {
                       <span className="ml-2 text-sm text-gray-500">· {(p.supplier as any).name}</span>
                     )}
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-green-700">{fmt(total, p.currency ?? 'PEN')}</p>
-                    <p className="text-xs text-gray-400">{t('purchases.items', { n: lineCount })}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="font-semibold text-green-700">{fmt(total, p.currency ?? 'PEN')}</p>
+                      <p className="text-xs text-gray-400">{t('purchases.items', { n: lineCount })}</p>
+                    </div>
+                    <Link
+                      href={`/${locale}/app/despensa/compras/${p.id}/editar`}
+                      className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                    >
+                      ✏️ Editar
+                    </Link>
                   </div>
                 </div>
                 {p.items && p.items.length > 0 && (
