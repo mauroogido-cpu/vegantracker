@@ -9,60 +9,62 @@ export async function POST(req: Request) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const payload: CreatePrepTaskPayload = await req.json()
+    const { task, inputs, outputs } = payload
 
     // Crear tarea
-    const { data: task, error: taskErr } = await supabase
+    const { data: created, error: taskErr } = await supabase
       .from('prep_tasks')
       .insert({
         user_id:       user.id,
-        name:          payload.name,
-        task_type:     payload.task_type,
-        notes:         payload.notes ?? null,
-        scheduled_for: payload.scheduled_for ?? null,
+        name:          task.name,
+        task_type:     task.task_type,
+        notes:         task.notes ?? null,
+        scheduled_for: task.scheduled_for ?? null,
         status:        'pending',
       })
       .select()
       .single()
 
-    if (taskErr || !task) {
+    if (taskErr || !created) {
       return NextResponse.json({ error: taskErr?.message ?? 'Error creando tarea' }, { status: 500 })
     }
 
     // Inputs
-    if (payload.inputs.length > 0) {
+    if (inputs.length > 0) {
       const { error: inErr } = await supabase.from('prep_task_inputs').insert(
-        payload.inputs.map(i => ({
-          prep_task_id:  task.id,
+        inputs.map(i => ({
+          prep_task_id:  created.id,
           stock_item_id: i.stock_item_id,
           quantity:      i.quantity,
           unit:          i.unit,
         }))
       )
       if (inErr) {
-        await supabase.from('prep_tasks').delete().eq('id', task.id)
+        await supabase.from('prep_tasks').delete().eq('id', created.id)
         return NextResponse.json({ error: inErr.message }, { status: 500 })
       }
     }
 
     // Outputs
-    if (payload.outputs.length > 0) {
+    if (outputs.length > 0) {
       const { error: outErr } = await supabase.from('prep_task_outputs').insert(
-        payload.outputs.map(o => ({
-          prep_task_id:      task.id,
+        outputs.map(o => ({
+          prep_task_id:      created.id,
           stock_item_id:     o.stock_item_id,
           quantity_expected: o.quantity_expected,
           unit:              o.unit,
         }))
       )
       if (outErr) {
-        await supabase.from('prep_tasks').delete().eq('id', task.id)
+        await supabase.from('prep_tasks').delete().eq('id', created.id)
         return NextResponse.json({ error: outErr.message }, { status: 500 })
       }
     }
 
-    return NextResponse.json({ id: task.id }, { status: 201 })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message ?? 'Unknown error' }, { status: 500 })
+    return NextResponse.json({ id: created.id }, { status: 201 })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 

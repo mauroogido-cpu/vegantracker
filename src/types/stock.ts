@@ -190,7 +190,7 @@ export interface PurchaseWithItems extends Purchase {
 
 // ── Prep Tasks ────────────────────────────────────────────────
 
-export type PrepTaskType   = 'prep' | 'transform' | 'cook'
+export type PrepTaskType   = 'prep' | 'transform' | 'cook' | 'blend' | 'ferment' | 'dehy' | 'sprout' | 'other'
 export type PrepTaskStatus = 'pending' | 'in_progress' | 'done' | 'cancelled'
 
 export interface PrepTask {

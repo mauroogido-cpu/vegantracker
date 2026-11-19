@@ -1,12 +1,11 @@
 'use client'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
-import type { StockItem, PrepTaskType } from '@/types/stock'
+import type { PrepTaskType, StockItem } from '@/types/stock'
 
 interface IOLine {
   stock_item_id: string
-  qty_g: number
+  quantity: number
   unit: string
 }
 
@@ -16,12 +15,14 @@ interface Props {
 }
 
 const TASK_TYPES: { value: PrepTaskType; icon: string }[] = [
-  { value: 'cook',     icon: '🍳' },
-  { value: 'blend',   icon: '🥤' },
-  { value: 'ferment', icon: '🫙' },
-  { value: 'dehy',    icon: '☀️' },
-  { value: 'sprout',  icon: '🌱' },
-  { value: 'other',   icon: '🔧' },
+  { value: 'cook',      icon: '🍳' },
+  { value: 'blend',     icon: '🥤' },
+  { value: 'ferment',   icon: '🫙' },
+  { value: 'dehy',      icon: '☀️' },
+  { value: 'sprout',    icon: '🌱' },
+  { value: 'prep',      icon: '🔪' },
+  { value: 'transform', icon: '🔄' },
+  { value: 'other',     icon: '🔧' },
 ]
 
 function IOBlock({
@@ -38,7 +39,7 @@ function IOBlock({
   const t = useTranslations('stock.prepTasks')
 
   const addLine = () =>
-    onChange([...lines, { stock_item_id: '', qty_g: 0, unit: 'g' }])
+    onChange([...lines, { stock_item_id: '', quantity: 0, unit: 'g' }])
 
   const updateLine = (i: number, patch: Partial<IOLine>) =>
     onChange(lines.map((l, idx) => (idx === i ? { ...l, ...patch } : l)))
@@ -64,8 +65,8 @@ function IOBlock({
             type="number"
             min={0}
             step={0.1}
-            value={line.qty_g || ''}
-            onChange={(e) => updateLine(i, { qty_g: parseFloat(e.target.value) || 0 })}
+            value={line.quantity || ''}
+            onChange={(e) => updateLine(i, { quantity: parseFloat(e.target.value) || 0 })}
             placeholder={t('quantity')}
             className="w-24 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:outline-none"
           />
@@ -98,14 +99,13 @@ function IOBlock({
 
 export default function NuevaTareaForm({ stockItems, onSuccess }: Props) {
   const t = useTranslations('stock.prepTasks')
-  const supabase = createClient()
 
   const [name, setName] = useState('')
   const [taskType, setTaskType] = useState<PrepTaskType>('cook')
   const [scheduledFor, setScheduledFor] = useState('')
   const [notes, setNotes] = useState('')
-  const [inputs, setInputs] = useState<IOLine[]>([{ stock_item_id: '', qty_g: 0, unit: 'g' }])
-  const [outputs, setOutputs] = useState<IOLine[]>([{ stock_item_id: '', qty_g: 0, unit: 'g' }])
+  const [inputs, setInputs] = useState<IOLine[]>([{ stock_item_id: '', quantity: 0, unit: 'g' }])
+  const [outputs, setOutputs] = useState<IOLine[]>([{ stock_item_id: '', quantity: 0, unit: 'g' }])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -114,31 +114,32 @@ export default function NuevaTareaForm({ stockItems, onSuccess }: Props) {
     setSubmitting(true)
     setError(null)
     try {
-      const { data: task, error: te } = await supabase
-        .from('prep_tasks')
-        .insert({
+      const payload = {
+        task: {
           name,
           task_type: taskType,
           scheduled_for: scheduledFor || null,
           notes: notes || null,
-          status: 'pending',
-        })
-        .select('id')
-        .single()
-      if (te || !task) throw te ?? new Error('No task returned')
+          status: 'pending' as const,
+          recipe_id: null,
+        },
+        inputs: inputs
+          .filter((l) => l.stock_item_id && l.quantity > 0)
+          .map((l) => ({ stock_item_id: l.stock_item_id, quantity: l.quantity, unit: l.unit })),
+        outputs: outputs
+          .filter((l) => l.stock_item_id && l.quantity > 0)
+          .map((l) => ({ stock_item_id: l.stock_item_id, quantity_expected: l.quantity, unit: l.unit })),
+      }
 
-      const inputRows = inputs
-        .filter((l) => l.stock_item_id && l.qty_g > 0)
-        .map((l) => ({ prep_task_id: task.id, stock_item_id: l.stock_item_id, qty_g: l.qty_g, unit: l.unit, io_type: 'input' }))
+      const res = await fetch('/api/stock/prep-tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
 
-      const outputRows = outputs
-        .filter((l) => l.stock_item_id && l.qty_g > 0)
-        .map((l) => ({ prep_task_id: task.id, stock_item_id: l.stock_item_id, qty_g: l.qty_g, unit: l.unit, io_type: 'output' }))
-
-      const allRows = [...inputRows, ...outputRows]
-      if (allRows.length) {
-        const { error: le } = await supabase.from('prep_task_lines').insert(allRows)
-        if (le) throw le
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error ?? 'Error creando tarea')
       }
 
       onSuccess?.()

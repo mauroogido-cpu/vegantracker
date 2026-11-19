@@ -531,11 +531,11 @@ export async function getStockSummary(): Promise<StockSummary> {
   const weekly_consume = movements.filter((m) => m.movement_type === 'recipe_use').reduce((s, m) => s + Math.abs(m.total_cost), 0)
 
   return {
-    total_items:        items.length,
-    total_value:        Math.round(total_value * 100) / 100,
-    low_stock_count:    low_stock,
-    pending_tasks:      tasksRes.count ?? 0,
-    weekly_spend:       Math.round(weekly_spend * 100) / 100,
-    weekly_consumption: Math.round(weekly_consume * 100) / 100,
+    items_in_stock:    items.filter((i) => i.current_stock_g > 0).length,
+    total_value:       Math.round(total_value * 100) / 100,
+    low_stock_count:   low_stock,
+    pending_tasks:     tasksRes.count ?? 0,
+    purchases_7d_cost: Math.round(weekly_spend * 100) / 100,
+    consumed_7d_cost:  Math.round(weekly_consume * 100) / 100,
   }
 }
