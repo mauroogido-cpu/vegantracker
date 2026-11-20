@@ -12,7 +12,8 @@
     "menu": "Menu",
     "logout": "Sign out",
     "settings": "Settings",
-    "despensa": "Pantry"
+    "despensa": "Pantry",
+    "report": "Report"
   },
   "auth": {
     "login": "Sign in",
@@ -245,7 +246,14 @@
       "submit": "Record purchase",
       "submitting": "Saving…",
       "errorNoItems": "Add at least one item with quantity and price",
-      "errorSave": "Could not save the purchase"
+      "errorSave": "Could not save the purchase",
+      "edit": "✏️ Edit",
+      "grossUnit": "{qty}g gross",
+      "netUnit": "→ {net}g net ({pct}% yield)",
+      "editSubtitle": "Update purchase details or add new items.",
+      "existingItems": "Existing items",
+      "addNewItems": "Add new items",
+      "editTitle": "Edit purchase"
     },
     "prepTasks": {
       "title": "Pre-production",
@@ -259,7 +267,12 @@
       "types": {
         "prep": "Prep (cutting/washing)",
         "transform": "Transform (tofu, milk)",
-        "cook": "Batch cooking"
+        "cook": "Batch cooking",
+        "blend": "Blend / smoothie",
+        "ferment": "Fermentation",
+        "dehy": "Dehydration",
+        "sprout": "Sprouting",
+        "other": "Other"
       },
       "status": {
         "pending": "Pending",
@@ -306,7 +319,8 @@
       "cancel": "Cancel",
       "saveNew": "Create supplier",
       "saveEdit": "Save changes",
-      "submitting": "Saving…"
+      "submitting": "Saving…",
+      "visitDaysPlaceholder": "Mon, Wed, Fri"
     }
   }
 }

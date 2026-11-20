@@ -179,8 +179,8 @@ export default function EditarCompraForm({
       className="space-y-6 p-6 bg-white rounded-xl shadow-sm border border-gray-200"
     >
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">✏️ Editar compra</h2>
-        <p className="text-sm text-gray-500">Modificá datos de la compra o agregá ítems nuevos.</p>
+        <h2 className="text-lg font-semibold text-gray-900">✏️ {t("editTitle")}</h2>
+        <p className="text-sm text-gray-500">{t("editSubtitle")}</p>
       </div>
 
       {error && (
@@ -244,7 +244,7 @@ export default function EditarCompraForm({
       {/* ── Ítems existentes ───────────────────────────────── */}
       {existingLines.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-gray-700">Ítems existentes</h3>
+          <h3 className="text-sm font-medium text-gray-700">{t("existingItems")}</h3>
 
           <div className="space-y-2">
             {existingLines.map((line) => (
@@ -309,7 +309,7 @@ export default function EditarCompraForm({
 
       {/* ── Nuevas líneas ──────────────────────────────────── */}
       <div className="space-y-3">
-        <h3 className="text-sm font-medium text-gray-700">Agregar ítems nuevos</h3>
+        <h3 className="text-sm font-medium text-gray-700">{t("addNewItems")}</h3>
 
         {newLines.map((line, i) => {
           const net = lineNet(line)

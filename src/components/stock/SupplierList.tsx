@@ -129,7 +129,7 @@ export default function SupplierList({ suppliers: initial }: Props) {
                 type="text"
                 value={form.visit_days}
                 onChange={(e) => setForm((f) => ({ ...f, visit_days: e.target.value }))}
-                placeholder="Lun, Mié, Vie"
+                placeholder={t("visitDaysPlaceholder")}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none"
               />
             </div>

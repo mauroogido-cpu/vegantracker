@@ -12,7 +12,8 @@
     "menu": "Menú",
     "logout": "Cerrar sesión",
     "settings": "Configuración",
-    "despensa": "Despensa"
+    "despensa": "Despensa",
+    "report": "Reporte"
   },
   "auth": {
     "login": "Iniciar sesión",
@@ -245,7 +246,14 @@
       "submit": "Registrar compra",
       "submitting": "Guardando…",
       "errorNoItems": "Agregá al menos un ítem con cantidad y precio",
-      "errorSave": "No se pudo guardar la compra"
+      "errorSave": "No se pudo guardar la compra",
+      "edit": "✏️ Editar",
+      "grossUnit": "{qty}g bruto",
+      "netUnit": "→ {net}g neto ({pct}% rend.)",
+      "editSubtitle": "Modificá datos de la compra o agregá ítems nuevos.",
+      "existingItems": "Ítems existentes",
+      "addNewItems": "Agregar ítems nuevos",
+      "editTitle": "Editar compra"
     },
     "prepTasks": {
       "title": "Pre-producción",
@@ -259,7 +267,12 @@
       "types": {
         "prep": "Preparación (corte/lavado)",
         "transform": "Transformación (tofu, leche)",
-        "cook": "Cocción / batch cook"
+        "cook": "Cocción / batch cook",
+        "blend": "Licuado / batido",
+        "ferment": "Fermentación",
+        "dehy": "Deshidratación",
+        "sprout": "Germinado",
+        "other": "Otro"
       },
       "status": {
         "pending": "Pendiente",
@@ -306,7 +319,8 @@
       "cancel": "Cancelar",
       "saveNew": "Crear proveedor",
       "saveEdit": "Guardar cambios",
-      "submitting": "Guardando…"
+      "submitting": "Guardando…",
+      "visitDaysPlaceholder": "Lun, Mié, Vie"
     }
   }
 }

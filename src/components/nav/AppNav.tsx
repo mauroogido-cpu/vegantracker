@@ -16,6 +16,7 @@ export default function AppNav({ locale }: { locale: string }) {
   const links = [
     { path: `${base}/dashboard`,   key: 'dashboard'    },
     { path: `${base}/meallog`,     key: 'meallog'      },
+    { path: `${base}/report`,      key: 'report'       },
     { path: `${base}/recipes`,     key: 'recipes'      },
     { path: `${base}/ingredients`, key: 'ingredients'  },
     { path: `${base}/costs`,       key: 'costs'        },

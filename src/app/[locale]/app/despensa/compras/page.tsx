@@ -99,7 +99,7 @@ export default async function ComprasPage() {
                       href={`/${locale}/app/despensa/compras/${p.id}/editar`}
                       className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
                     >
-                      ✏️ Editar
+                      {t('purchases.edit')}
                     </Link>
                   </div>
                 </div>
@@ -112,10 +112,10 @@ export default async function ComprasPage() {
                             {(item.stock_item as any)?.name ?? '—'}
                           </td>
                           <td className="px-4 py-2 text-gray-500 tabular-nums">
-                            {item.quantity_gross}g bruto
+                            {t('purchases.grossUnit', { qty: item.quantity_gross })}
                             {item.yield_pct_snap < 100 && (
                               <span className="text-gray-400 text-xs ml-1">
-                                → {item.quantity_net}g neto ({item.yield_pct_snap}% rend.)
+                                {t('purchases.netUnit', { net: item.quantity_net, pct: item.yield_pct_snap })}
                               </span>
                             )}
                           </td>
