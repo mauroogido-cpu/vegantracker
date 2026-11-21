@@ -258,3 +258,84 @@ export async function getWeekDetails(
   // Return oldest-first
   return results.reverse()
 }
+
+// ---------------------------------------------------------------------------
+// getDayLogNames
+// Lightweight query — only names of meals logged on a date.
+// No nutrition data. Used by the collapsed history row.
+// ---------------------------------------------------------------------------
+export type DayLogName = {
+  id:        string
+  meal_type: string
+  /** Display name: recipe name, user_ingredient name, or ingredient name */
+  name:      string
+  /** 'recipe' | 'ingredient' | 'user_ingredient' */
+  source:    'recipe' | 'ingredient' | 'user_ingredient'
+}
+
+export async function getDayLogNames(
+  userId: string,
+  date:   string,
+  locale: string,
+): Promise<DayLogName[]> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('meal_log')
+    .select(`
+      id,
+      meal_type,
+      recipe_id,
+      ingredient_id,
+      user_ingredient_id,
+      recipe:recipe_id ( name ),
+      ingredient:ingredient_id (
+        name_en,
+        ingredient_translations ( locale, name )
+      ),
+      user_ingredient:user_ingredient_id ( name_es, name_en )
+    `)
+    .eq('user_id', userId)
+    .eq('logged_at', date)
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('getDayLogNames failed:', error.message)
+    return []
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as unknown as any[]).map((row): DayLogName => {
+    if (row.recipe_id && row.recipe) {
+      return {
+        id:        row.id,
+        meal_type: row.meal_type,
+        name:      row.recipe.name ?? '—',
+        source:    'recipe',
+      }
+    }
+    if (row.user_ingredient_id && row.user_ingredient) {
+      const ui = row.user_ingredient
+      return {
+        id:        row.id,
+        meal_type: row.meal_type,
+        name:      ui.name_es ?? ui.name_en ?? '—',
+        source:    'user_ingredient',
+      }
+    }
+    // loose ingredient
+    const ing = row.ingredient
+    const translations: { locale: string; name: string }[] =
+      ing?.ingredient_translations ?? []
+    const localName =
+      translations.find((t: { locale: string; name: string }) => t.locale === locale)?.name ??
+      ing?.name_en ??
+      '—'
+    return {
+      id:        row.id,
+      meal_type: row.meal_type,
+      name:      localName,
+      source:    'ingredient',
+    }
+  })
+}

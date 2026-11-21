@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteMealLog, getDayLog, getDayLogDetail, getMealLogHistory, logMeal, updateMealLog } from '@/lib/api/meallog'
+import { deleteMealLog, getDayLog, getDayLogDetail, getDayLogNames, getMealLogHistory, logMeal, updateMealLog } from '@/lib/api/meallog'
 import type { LogMealPayload } from '@/lib/api/meallog'
 
 export function useDayLog(userId: string, date: string) {
@@ -65,5 +65,14 @@ export function useUpdateMealLog() {
       queryClient.invalidateQueries({ queryKey: ['meallog'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
+  })
+}
+
+export function useDayLogNames(userId: string, date: string, locale: string) {
+  return useQuery({
+    queryKey: ['meallog', 'names', userId, date, locale],
+    queryFn:  () => getDayLogNames(userId, date, locale),
+    enabled:  !!userId && !!date,
+    staleTime: 1000 * 60 * 5,
   })
 }

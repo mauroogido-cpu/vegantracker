@@ -4,7 +4,7 @@ import { Fragment } from 'react'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { useAuth } from '@/hooks/useAuth'
-import { useMealLogHistory, useDayLogDetail } from '@/hooks/useMealLog'
+import { useMealLogHistory, useDayLogDetail, useDayLogNames } from '@/hooks/useMealLog'
 import type { DayHistorySummary } from '@/types/domain'
 import { usePrefsStore } from '@/stores/usePrefsStore'
 import { useRDA } from '@/hooks/useRDA'
@@ -78,6 +78,7 @@ interface DayRowProps {
 function DayRow({ day, locale, userId }: DayRowProps) {
   const [expanded, setExpanded] = useState(false)
   const { data: detail, isLoading } = useDayLogDetail(userId, day.logged_at, expanded, locale)
+  const { data: names }             = useDayLogNames(userId, day.logged_at, locale)
   const units    = usePrefsStore((s) => s.units)
   const { rda }  = useRDA()
 
@@ -89,71 +90,77 @@ function DayRow({ day, locale, userId }: DayRowProps) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full text-left px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between hover:bg-gray-50 transition-colors"
+        className="w-full text-left px-4 py-3 flex flex-col gap-2 hover:bg-gray-50 transition-colors"
       >
-        {/* Fecha + calorías + chevron */}
-        <div className="flex items-center gap-3 min-w-[160px]">
-          {/* Chevron */}
-          <span className="text-gray-400 flex-shrink-0">
-            {expanded ? (
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-              </svg>
-            ) : (
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-              </svg>
-            )}
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">
-              {new Date(day.logged_at + 'T00:00:00').toLocaleDateString(locale, {
-                weekday: 'short', day: 'numeric', month: 'short',
-              })}
-            </p>
-            <p className="text-xs text-gray-400">
-              {day.entry_count} entr{day.entry_count === 1 ? 'ada' : 'adas'}
-            </p>
-          </div>
-          {/* Calorías */}
-          <div className="flex flex-col items-center ml-2">
-            <span className="text-[10px] text-gray-400">Cal</span>
-            <div className="flex items-center gap-1">
-              <span className={`h-2 w-2 rounded-full ${calStatus.dot}`} />
-              <span className="text-xs font-semibold text-gray-800">
-                {day.cal != null ? Math.round(day.cal) : '—'}
-              </span>
+        {/* Row 1: fecha + calorías + macros + chevron */}
+        <div className="flex items-center gap-3 justify-between">
+          <div className="flex items-center gap-3">
+            {/* Chevron */}
+            <span className="text-gray-400 flex-shrink-0">
+              {expanded ? (
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                </svg>
+              )}
+            </span>
+            {/* Fecha */}
+            <div className="min-w-[110px]">
+              <p className="text-sm font-semibold text-gray-900">
+                {new Date(day.logged_at + 'T00:00:00').toLocaleDateString(locale, {
+                  weekday: 'short', day: 'numeric', month: 'short',
+                })}
+              </p>
+            </div>
+            {/* Calorías */}
+            <div className="flex flex-col items-center">
+              <span className="text-[10px] text-gray-400">Cal</span>
+              <div className="flex items-center gap-1">
+                <span className={`h-2 w-2 rounded-full ${calStatus.dot}`} />
+                <span className="text-xs font-semibold text-gray-800">
+                  {day.cal != null ? Math.round(day.cal) : '—'}
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* Macros */}
+          <div className="flex flex-wrap gap-3">
+            {BADGE_COLS.map((c) => (
+              <NutrientBadge
+                key={c.key}
+                label={c.label}
+                value={day[c.key as keyof DayHistorySummary] as number | null}
+                nk={c.key}
+                unit={c.unit}
+                rda={rda}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Macros */}
-        <div className="flex flex-wrap gap-3">
-          {BADGE_COLS.map((c) => (
-            <NutrientBadge
-              key={c.key}
-              label={c.label}
-              value={day[c.key as keyof DayHistorySummary] as number | null}
-              nk={c.key}
-              unit={c.unit}
-              rda={rda}
-            />
-          ))}
-        </div>
-
-        {/* Micronutrientes */}
-        <div className="flex flex-wrap gap-3">
-          {MICRO_BADGE_COLS.map((c) => (
-            <NutrientBadge
-              key={c.key}
-              label={c.label}
-              value={day[c.key as keyof DayHistorySummary] as number | null}
-              nk={c.key}
-              unit={c.unit}
-              rda={rda}
-            />
-          ))}
-        </div>
+        {/* Row 2: lista de lo comido */}
+        {names && names.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pl-7">
+            {names.map((n) => (
+              <span
+                key={n.id}
+                className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-xs text-gray-600"
+              >
+                {n.source === 'recipe' && (
+                  <svg className="h-3 w-3 text-emerald-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+                  </svg>
+                )}
+                {n.name}
+              </span>
+            ))}
+          </div>
+        )}
       </button>
 
       {/* Expanded detail panel */}
